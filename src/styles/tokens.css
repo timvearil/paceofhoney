@@ -1,0 +1,201 @@
+/* =============================================================================
+   paceofhoney.me — дизайн-токены
+   Каркас снят с канона brycekirk.com, палитра и шрифты наши.
+   Разбор оригинала: 00_Reference/brycekirk-canon.md
+   Решения по типографике: 01_Spec/tz-paceofhoney-v2.md, разделы 0.1 и 2.3
+   ========================================================================== */
+
+:root {
+  /* --- Палитра ---------------------------------------------------------- */
+  --dark:  #111827;             /* графит: текст в светлой теме, фон в тёмной */
+  --light: #F9FAFB;             /* тёплый молочно-белый */
+  /* Единственный акцент — цвет вольфрамового света.
+     ВНИМАНИЕ, проверено расчётом контраста:
+       янтарь на графите (тёмная тема) ≈ 8.4 : 1 — годится для текста;
+       янтарь на молоке (светлая тема) ≈ 2.1 : 1 — НЕ годится, нужно 4.5 : 1.
+     Поэтому в светлой теме янтарь допустим только как подложка (текст
+     поверх — графитовый) или как декоративное пятно, не несущее смысла:
+     точка после заголовка, подсвет кадра. Текстом на светлом фоне — никогда. */
+  --amber: #E8A33D;
+
+  /* Контур фокуса. Один цвет не держит 3:1 к обоим фонам, поэтому
+     в тёмной теме он переопределяется ниже.                                */
+  --focus: #7B2D8E;
+
+  /* --- Шрифты -----------------------------------------------------------
+     Имена семейств — ровно те, что объявляет Fontsource. Не переименовывать.
+     Все три переменные, с кириллицей, SIL OFL 1.1, отдаются с нашего домена. */
+  --ff-main:    'Onest Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ff-mono:    'Geist Mono Variable', 'Courier New', Courier, monospace;
+  --ff-display: 'Playfair Display Variable', Georgia, 'Times New Roman', serif;
+
+  /* --- Шкала кегля ------------------------------------------------------- */
+  --fs-xxs:  .65rem;            /* копирайт, служебные строки подвала */
+  --fs-xs:   .75rem;            /* теги, кнопки-ссылки, подписи к фото */
+  --fs-sm:   .875rem;
+  --fs-base: 1rem;
+  --fs-lg:   1.15rem;           /* основной текст статьи */
+  --fs-xl:   1.3rem;
+
+  /* Плотное начертание заголовков. Ось переменного шрифта позволяет
+     промежуточные значения — канон использует 750, и это заметно лучше 700. */
+  --bold: 750;
+
+  /* --- Контрольные точки ------------------------------------------------- */
+  --bp-sm:  512px;
+  --bp-md:  768px;
+  --bp-lg: 1024px;              /* граница «есть ховер / нет ховера» */
+  --bp-xl: 1200px;
+
+  --radius: 4px;
+
+  /* --- Границы флюидных заголовков --------------------------------------- */
+  --h1-min: 2.5rem;  --h1-max: 6rem;
+  --h2-min: 1.5rem;  --h2-max: 3rem;
+  --h3-min: 1.3rem;  --h3-max: 2.35rem;
+  --h4-min: 1.1rem;  --h4-max: 1.8rem;
+
+  /* --- Тайминги ---------------------------------------------------------- */
+  --t-fast:  .3s;               /* геометрия: шапка, шторка, иконки */
+  --t-color: .4s;               /* проявление цвета — ТЗ 2.5.1 */
+  --t-slow: 1.25s;              /* разворачивание линеек, расфокус */
+}
+
+/* =============================================================================
+   Темы. Класс dark на <html>, выбор в localStorage['theme'].
+   Каждая утилита объявляется в обеих ветках, иначе инвертированные острова
+   (плашка серии, «Полка с журналами») работать не будут.
+   ========================================================================== */
+
+html:not(.dark) { background-color: var(--light); color: var(--dark); }
+html.dark       { background-color: var(--dark);  color: var(--light); }
+
+html.dark { --focus: #E0A6EE; }   /* светлее, чтобы держать контраст к графиту */
+
+html:not(.dark) .theme-color          { color: var(--dark); }
+html:not(.dark) .theme-color-reverse  { color: var(--light); }
+html:not(.dark) .theme-bg             { background-color: var(--dark); }
+html:not(.dark) .theme-bg-reverse     { background-color: var(--light); }
+html:not(.dark) .theme-border         { border-color: var(--dark); }
+html:not(.dark) .theme-fill path      { fill: var(--dark); }
+html:not(.dark) .theme-stroke path    { stroke: var(--dark); }
+
+html.dark .theme-color          { color: var(--light); }
+html.dark .theme-color-reverse  { color: var(--dark); }
+html.dark .theme-bg             { background-color: var(--light); }
+html.dark .theme-bg-reverse     { background-color: var(--dark); }
+html.dark .theme-border         { border-color: var(--light); }
+html.dark .theme-fill path      { fill: var(--light); }
+html.dark .theme-stroke path    { stroke: var(--dark); }
+
+/* Парные утилиты показа/скрытия. Канон называет их вразнобой — сводим к паре.
+   Нужны цоколю .bookend: светлый кадр несёт .theme-hide-dark, тёмный —
+   .theme-hide-light.                                                        */
+html:not(.dark) .theme-hide-light { display: none !important; }
+html.dark       .theme-hide-dark  { display: none !important; }
+
+/* =============================================================================
+   Сброс и типографика
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, p, ol, ul, li, dl, dt, dd, blockquote,
+figure, fieldset, legend, textarea, pre, iframe, hr,
+h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0; }
+
+h1, h2, h3, h4, h5, h6 { font-size: 100%; font-weight: 400; }
+
+body {
+  font-family: var(--ff-main);
+  font-size: var(--fs-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img, video { max-width: 100%; height: auto; }
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-weight: var(--bold);
+  letter-spacing: -.025em;
+  min-height: 0vw;        /* лечит баг Safari с vw внутри clamp — не удалять */
+}
+
+h1, .h1 { line-height: 1;
+  font-size: clamp(var(--h1-min), var(--h1-min) + (1vw - .185rem) * 6.1947, var(--h1-max)); }
+h2, .h2 { line-height: 1.15;
+  font-size: clamp(var(--h2-min), var(--h2-min) + (1vw - .185rem) * 3.0973, var(--h2-max)); }
+h3, .h3 { line-height: 1.15;
+  font-size: clamp(var(--h3-min), var(--h3-min) + (1vw - .185rem) * 2.6549, var(--h3-max)); }
+h4, .h4 { line-height: 1.2;
+  font-size: clamp(var(--h4-min), var(--h4-min) + (1vw - .185rem) * 1.7699, var(--h4-max)); }
+
+.text p            { line-height: 1.6; letter-spacing: .015em; }
+.text p:not(:last-child) { margin-bottom: .5em; }
+.text h1, .text .h1 { margin-bottom: .2em; }
+.text h2, .text h3, .text h4 { margin-bottom: .4em; }
+
+.mono    { font-family: var(--ff-mono); font-size: var(--fs-xs); }
+
+/* Акцентная антиква. Решение 21.09: оставляем, хотя читается тяжелее гротеска —
+   ради журнального звучания. Отсюда правило: Playfair только крупно и только
+   короткими строками (слоган, заголовок серии, фраза в подвале). Тонкие
+   засечки высокого контраста на малом кегле сливаются, а в абзаце текста
+   утомляют глаз. Минимальный кегль зашит здесь, чтобы не нарушить случайно. */
+.display {
+  font-family: var(--ff-display);
+  font-weight: 500;
+  font-size: max(1.5rem, 1em);
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+.tag     { font-family: var(--ff-mono); font-size: var(--fs-xs); }
+
+/* Колонка статьи: канон держит 60% контейнера — около 90 знаков в строке. */
+.post-content p,
+.post-content ul,
+.post-content ol { font-size: var(--fs-lg); line-height: 1.75; }
+.post-content p:not(:last-child) { margin-bottom: 1em; }
+
+/* Разделитель внутри текста — не линия, а моноширинная тильда. */
+.post-content hr        { border: none; margin: 2rem 0; text-align: center; }
+.post-content hr::after { content: "~"; font-family: var(--ff-mono); font-size: var(--fs-sm); }
+
+/* =============================================================================
+   Сетка
+   ========================================================================== */
+
+.container   { max-width: clamp(18.5rem, 90%, 80rem); margin: 0 auto; position: relative; }
+.section     { margin-top: clamp(2rem, 7vw, 5rem); }
+.section--lg { margin-top: clamp(4rem, 12vw, 9rem); }
+
+/* =============================================================================
+   Доступность
+   ========================================================================== */
+
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-to-main { position: absolute; left: -9999px; }
+.skip-to-main:focus-visible {
+  left: 1rem; top: 1rem; z-index: 2000;
+  padding: .5rem 1rem; border-radius: var(--radius);
+  background: var(--amber); color: var(--dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

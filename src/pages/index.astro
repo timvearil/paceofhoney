@@ -1,43 +1,161 @@
 ---
-// Временная заглушка. Настоящая витрина — задача P6-01.
-// Её задача сейчас одна: доказать, что конвейер Obsidian → GitHub → сайт работает.
+// Временная страница-образец. Настоящая витрина — задача P6-01.
+// Сейчас её работа: показать вживую три шрифта, шкалу заголовков,
+// палитру и переключение тем — чтобы было что обсуждать глазами.
+
+import '@fontsource-variable/onest';
+import '@fontsource-variable/geist-mono';
+import '@fontsource-variable/playfair-display';
+import '../styles/tokens.css';
+
 const title = 'Со скоростью мёда';
 const tagline = 'Здесь время течёт со скоростью мёда.';
-const buildDate = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+const buildDate = new Date().toLocaleString('ru-RU', {
+  timeZone: 'Europe/Moscow',
+  day: '2-digit', month: '2-digit', year: 'numeric',
+  hour: '2-digit', minute: '2-digit',
+});
 ---
 
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} — paceofhoney.me</title>
+    <title>{title} — образец типографики</title>
     <meta name="description" content={tagline} />
-    <style>
-      :root { color-scheme: light dark; }
-      body {
-        margin: 0;
-        min-height: 100dvh;
-        display: grid;
-        place-content: center;
-        gap: 1rem;
-        padding: 2rem;
-        background: #F9FAFB;
-        color: #111827;
-        font: 16px/1.6 system-ui, sans-serif;
-        text-align: center;
-      }
-      @media (prefers-color-scheme: dark) {
-        body { background: #111827; color: #F9FAFB; }
-      }
-      h1 { margin: 0; font-size: clamp(2rem, 8vw, 4rem); letter-spacing: -0.025em; }
-      p  { margin: 0; max-width: 32rem; }
-      .mono { font-family: ui-monospace, "Courier New", monospace; font-size: .75rem; opacity: .5; }
-      .dot { color: #E8A33D; }
-    </style>
+    <link rel="canonical" href="https://paceofhoney.me/" />
+    <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+
+    {/* Выбор темы до первой отрисовки. Скрипт блокирующий и намеренно
+        крошечный: без него читатель в тёмной теме получает вспышку белого
+        на каждой странице. ТЗ 2.3. */}
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (!t) {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          if (t === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) { /* приватный режим — просто остаёмся в светлой теме */ }
+      })();
+    </script>
   </head>
+
   <body>
-    <h1>{title}<span class="dot">.</span></h1>
-    <p>{tagline}</p>
-    <p class="mono">каркас собран · {buildDate}</p>
+    <a class="skip-to-main" href="#main">Перейти к содержанию</a>
+
+    <div class="container">
+      <header class="topbar">
+        <span class="mono">paceofhoney.me</span>
+        <button id="themeToggle" type="button" class="toggle mono"
+                aria-label="Переключить тему">
+          <span class="theme-hide-dark">тёмная тема</span>
+          <span class="theme-hide-light">светлая тема</span>
+        </button>
+      </header>
+
+      <main id="main">
+        <section class="section">
+          <p class="mono muted">01 / основной текст · Onest</p>
+          <h1>{title}<span class="dot">.</span></h1>
+          <div class="text measure">
+            <p>
+              Суверенный медиапроект о выходе из цифровой «Карусели». Этот абзац
+              набран тем шрифтом, которым будут набраны все главы: гротеск Onest,
+              переменного начертания, с полной кириллицей. Проверяем на длинных
+              словах вроде «достопримечательность» и на знаках препинания —
+              тире, кавычки-«ёлочки», многоточие…
+            </p>
+            <p>
+              Ещё абзац, чтобы оценить межстрочное расстояние и то, как ложится
+              строка. Ширина колонки ограничена: около девяноста знаков — предел,
+              после которого глаз теряет начало следующей строки.
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="mono muted">02 / шкала заголовков</p>
+          <h2>Пчелиный фаервол</h2>
+          <h3>Глава восьмая: пузырь надувается</h3>
+          <h4>Что случилось на пасеке в четверг</h4>
+        </section>
+
+        <section class="section">
+          <p class="mono muted">03 / служебный шрифт · Geist Mono</p>
+          <nav class="menu mono">
+            <span class="active">00: главная</span>
+            <span>01: манифест</span>
+            <span>02: серии</span>
+            <span>03: о нас</span>
+          </nav>
+          <p class="mono muted plate">📖 Сериал «НектарАкции» · Глава 8 из 10</p>
+          <p class="mono muted">20 августа 2026 · 1 234 знака · #пчёлы #финансы</p>
+        </section>
+
+        <section class="section">
+          <p class="mono muted">04 / акцентная антиква · Playfair Display</p>
+          <p class="display slogan">{tagline}</p>
+        </section>
+
+        <section class="section">
+          <p class="mono muted">05 / палитра</p>
+          <ul class="swatches mono">
+            <li><span class="chip chip--dark"></span>графит #111827</li>
+            <li><span class="chip chip--light"></span>молоко #F9FAFB</li>
+            <li><span class="chip chip--amber"></span>янтарь #E8A33D</li>
+          </ul>
+        </section>
+
+        <hr class="theme-border rule" />
+        <p class="mono muted">каркас собран · {buildDate}</p>
+      </main>
+    </div>
+
+    <script>
+      const btn = document.getElementById('themeToggle');
+      btn?.addEventListener('click', () => {
+        const dark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+      });
+    </script>
+
+    <style>
+      body { padding-bottom: 6rem; }
+
+      .topbar {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 1.5rem 0;
+      }
+      .toggle {
+        background: none; border: 1px solid currentColor; color: inherit;
+        padding: .35rem .9rem; border-radius: 8rem; cursor: pointer;
+        transition: transform var(--t-fast);
+      }
+      .toggle:hover { transform: scale(1.04); }
+
+      .muted { opacity: .5; }
+      .dot   { color: var(--amber); }
+
+      .measure { max-width: 34rem; margin-top: 1rem; }
+
+      .menu { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: .75rem 0 1.5rem; }
+      .menu .active { font-weight: 700; }
+
+      .plate { margin-bottom: .5rem; }
+
+      .slogan { font-size: clamp(1.75rem, 5vw, 3.25rem); line-height: 1.2; margin-top: 1rem; }
+
+      .swatches { list-style: none; display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem; }
+      .swatches li { display: flex; align-items: center; gap: .5rem; }
+      .chip { width: 1.75rem; height: 1.75rem; border-radius: var(--radius); border: 1px solid currentColor; }
+      .chip--dark  { background: #111827; }
+      .chip--light { background: #F9FAFB; }
+      .chip--amber { background: #E8A33D; }
+
+      .rule { margin: clamp(3rem, 8vw, 6rem) 0 1rem; border: none; border-top: 1px solid; }
+    </style>
   </body>
 </html>
