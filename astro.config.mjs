@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { remarkObsidian } from './src/plugins/remark-obsidian.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
 const SITE = 'https://paceofhoney.me';
@@ -28,7 +29,26 @@ export default defineConfig({
     }),
   ],
 
+  image: {
+    // Адаптивные изображения по умолчанию: Astro сам режет несколько размеров
+    // и проставляет srcset с sizes. Для проекта, где фотография — главный
+    // носитель смысла, это принципиально: макроснимок мёда на 4 МБ не должен
+    // уезжать целиком на телефон.
+    layout: 'constrained',
+    objectFit: 'cover',
+    objectPosition: 'center',
+  },
+
   markdown: {
+    // Перевод синтаксиса Obsidian: [[ссылки]] и ![[вложения]].
+    //
+    // Наличие remarkPlugins переводит Astro 7 с нового обработчика Markdown
+    // (Sätteri) обратно на unified/remark — для этого и стоит в зависимостях
+    // @astrojs/markdown-remark. Осознанный размен: теряем скорость нового
+    // обработчика, получаем зрелую экосистему remark, на которой написан
+    // наш переводчик синтаксиса Obsidian. Сборка сайта на 20 страниц —
+    // полторы секунды, экономить тут нечего.
+    remarkPlugins: [[remarkObsidian, { root: process.cwd() }]],
     // Подсветку кода настроим, когда появятся технические статьи.
     shikiConfig: { theme: 'github-dark', wrap: true },
   },
