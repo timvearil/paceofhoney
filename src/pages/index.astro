@@ -1,0 +1,43 @@
+---
+// Временная заглушка. Настоящая витрина — задача P6-01.
+// Её задача сейчас одна: доказать, что конвейер Obsidian → GitHub → сайт работает.
+const title = 'Со скоростью мёда';
+const tagline = 'Здесь время течёт со скоростью мёда, стекающего с ложки.';
+const buildDate = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+---
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — paceofhoney.me</title>
+    <meta name="description" content={tagline} />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-content: center;
+        gap: 1rem;
+        padding: 2rem;
+        background: #F9FAFB;
+        color: #111827;
+        font: 16px/1.6 system-ui, sans-serif;
+        text-align: center;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #111827; color: #F9FAFB; }
+      }
+      h1 { margin: 0; font-size: clamp(2rem, 8vw, 4rem); letter-spacing: -0.025em; }
+      p  { margin: 0; max-width: 32rem; }
+      .mono { font-family: ui-monospace, "Courier New", monospace; font-size: .75rem; opacity: .5; }
+      .dot { color: #E8A33D; }
+    </style>
+  </head>
+  <body>
+    <h1>{title}<span class="dot">.</span></h1>
+    <p>{tagline}</p>
+    <p class="mono">каркас собран · {buildDate}</p>
+  </body>
+</html>

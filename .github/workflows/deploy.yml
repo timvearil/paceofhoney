@@ -1,0 +1,58 @@
+name: Сборка и публикация сайта
+
+# Запускается сам при каждой отправке изменений в ветку main,
+# а также вручную кнопкой Run workflow на вкладке Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Права, которые GitHub выдаёт этой сборке. Минимально необходимые:
+# читать код, писать в Pages, подтверждать личность при публикации.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Если пушей подряд несколько, публикуется последний, промежуточные отменяются.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Собрать
+    runs-on: ubuntu-latest
+    steps:
+      - name: Забрать код из репозитория
+        uses: actions/checkout@v4
+
+      - name: Поставить Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Та же версия, что на машине автора: расхождения ловятся тяжело.
+          node-version: '24'
+          cache: npm
+
+      - name: Установить зависимости
+        run: npm ci
+
+      - name: Собрать сайт
+        run: npm run build
+
+      - name: Передать готовый сайт в Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    name: Опубликовать
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Публикация
+        id: deployment
+        uses: actions/deploy-pages@v4
