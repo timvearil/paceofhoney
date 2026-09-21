@@ -5,7 +5,7 @@ social_links:
   - title: "Telegram"
     url: "https://t.me/pace_of_honey"
   - title: "MAX"
-    url: "https://max.ru/pace_of_honey"
+    url: "https://max.ru/channel_pace_of_honey"
   - title: "ВКонтакте"
     url: "https://vk.ru/pace_of_honey"
   - title: "Дзен"

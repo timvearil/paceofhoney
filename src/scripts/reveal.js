@@ -22,9 +22,10 @@ const ONCE = [
   ['[data-bookend-slide]', 'bookend-slide-up'],
 ];
 
-/** Кому анимация противопоказана — тому сразу конечное состояние. */
-const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
+/**
+ * Запасной путь, если браузер не умеет следить за попаданием в кадр:
+ * показываем всё сразу, ничего не пряча.
+ */
 function showEverythingAtOnce() {
   for (const [selector, className] of ONCE) {
     document.querySelectorAll(selector).forEach((el) => el.classList.add(className));
@@ -94,10 +95,14 @@ function watchFrames() {
 }
 
 export function startReveal() {
-  if (calm) {
+  if (!('IntersectionObserver' in window)) {
     showEverythingAtOnce();
     return;
   }
+  // Просьбу «поменьше движения» отрабатывает CSS: он оставляет плавное
+  // проявление и мгновенно переключает всё, что двигает элемент. Наблюдатель
+  // при этом работает как обычно — иначе у таких читателей страница
+  // проявлялась бы вся разом, включая то, до чего они не долистали.
   watchOnce();
   watchFrames();
 }

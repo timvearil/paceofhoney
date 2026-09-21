@@ -209,11 +209,24 @@ a:focus-visible, button:focus-visible {
   background: var(--honey); color: var(--dark);  /* заливка под графитовый текст */
 }
 
+/* Просьба «поменьше движения».
+ *
+ * Обычно её отрабатывают одной строкой — глушат вообще все переходы. Это
+ * перебор: просьба касается перемещения и параллакса, от которых у части
+ * людей кружится голова, а не смены яркости или цвета. Выключив всё подряд,
+ * получаем мёртвую страницу там, где достаточно было убрать движение.
+ *
+ * Поэтому разрешаем переходы только тем свойствам, что не двигают элемент:
+ * прозрачность, цвет, фильтр. Всё, что связано с перемещением и масштабом,
+ * переключается мгновенно.
+ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
     scroll-behavior: auto !important;
+    transition-property: opacity, color, background-color, border-color,
+                         fill, stroke, filter, backdrop-filter !important;
+    transition-duration: .25s !important;
   }
 }
