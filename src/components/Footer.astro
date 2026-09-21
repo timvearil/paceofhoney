@@ -1,0 +1,107 @@
+---
+/**
+ * Сквозной подвал статических страниц.
+ *
+ * На страницах эпизодов не выводится вовсе — чтобы не разрывать поток чтения
+ * (ТЗ 4.5.1). Всё содержимое читается из src/content/settings/footer.md.
+ *
+ * Внизу — графический цоколь: два подготовленных кадра под светлую и тёмную
+ * тему. Монохром зашит в сами файлы, а не наводится фильтром: так точнее по
+ * тону и не создаётся лишний слой композитинга внизу каждой страницы (ТЗ 4.5.2).
+ */
+
+import { getEntry, render } from 'astro:content';
+import { Image } from 'astro:assets';
+
+const entry = await getEntry('footer', 'footer');
+const f = entry?.data;
+const Content = entry ? (await render(entry)).Content : null;
+---
+
+{f && (
+  <footer class="footer">
+    <div class="container">
+      <hr class="theme-border rule" data-unfurl />
+
+      <div class="top">
+        <p class="display slogan">{f.slogan}</p>
+
+        {f.social_links.length > 0 && (
+          <ul class="social mono" aria-label="Каналы проекта">
+            {f.social_links.map((s) => (
+              <li><a href={s.url} rel="me noopener">{s.title}</a></li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {Content && <div class="human mono"><Content /></div>}
+
+      <p class="legal mono">
+        <span>{f.copyright}</span>
+        {f.ai_endpoints.length > 0 && (
+          <span class="agents">
+            Agents: {f.ai_endpoints.map((a, i) => (
+              <>{i > 0 && ' · '}<a href={a.url}>{a.title}</a></>
+            ))}
+          </span>
+        )}
+      </p>
+    </div>
+
+    {(f.bookend_light || f.bookend_dark) && (
+      <div class="bookend" aria-hidden="true">
+        {f.bookend_light && (
+          <Image src={f.bookend_light} alt="" class="theme-hide-dark" data-bookend-slide
+                 widths={[768, 1280, 2048]} sizes="100vw" />
+        )}
+        {f.bookend_dark && (
+          <Image src={f.bookend_dark} alt="" class="theme-hide-light" data-bookend-slide
+                 widths={[768, 1280, 2048]} sizes="100vw" />
+        )}
+      </div>
+    )}
+  </footer>
+)}
+
+<style>
+  .footer { margin-top: clamp(5rem, 14vw, 10rem); }
+
+  .rule { border: none; border-top: 1px solid; width: 0; transition: width var(--t-slow) ease; }
+  .rule.unfurled { width: 100%; }
+
+  .top {
+    display: flex; flex-wrap: wrap; gap: 1.5rem;
+    align-items: flex-start; justify-content: space-between;
+    margin-top: 1.5rem;
+  }
+  .slogan { max-width: 22ch; margin: 0; }
+
+  .social { display: flex; flex-wrap: wrap; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+  .social a { color: inherit; text-decoration: none; opacity: .6; transition: opacity var(--t-fast); }
+  .social a:hover { opacity: 1; }
+
+  .human { margin-top: 3rem; opacity: .5; max-width: 42ch; line-height: 1.5; }
+  .human :global(p) { margin: 0; }
+
+  .legal {
+    display: flex; flex-wrap: wrap; gap: .5rem 2rem; justify-content: space-between;
+    margin-top: .75rem; padding-bottom: 1rem;
+    font-size: var(--fs-xxs); opacity: .5;
+  }
+  .legal a { color: inherit; }
+
+  /* Цоколь: растёт снизу, как поднимающийся навстречу горизонт. */
+  .bookend { display: block; line-height: 0; }
+  .bookend :global(img) { width: 100%; height: auto; }
+  .bookend :global([data-bookend-slide]) {
+    opacity: 0;
+    transform: scaleY(.8);
+    transform-origin: center bottom;
+    transition: transform 1s ease, opacity .5s ease;
+  }
+  .bookend :global([data-bookend-slide].bookend-slide-up) {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+</style>

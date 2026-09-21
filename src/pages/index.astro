@@ -1,176 +1,158 @@
 ---
-// Временная страница-образец. Настоящая витрина — задача P6-01.
-// Сейчас её работа: показать вживую три шрифта, шкалу заголовков,
-// палитру и переключение тем — чтобы было что обсуждать глазами.
+/**
+ * Временная витрина компонентов. Настоящая главная — задача P6-01.
+ *
+ * Сейчас страница показывает всё, что собрано на этапе P4: шапку с уезжающим
+ * меню, шторку, карточки серий, кадр с проявлением цвета, подвал. Плюс
+ * типографику и палитру с прошлого этапа.
+ */
 
-import '@fontsource-variable/onest';
-import '@fontsource-variable/geist-mono';
-import '@fontsource-variable/playfair-display';
-import '../styles/tokens.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Footer from '../components/Footer.astro';
+import SeriesCard from '../components/SeriesCard.astro';
+import { getPublishedSeries, getEpisodes } from '../lib/content';
+import { getEntry, render } from 'astro:content';
 
-const title = 'Со скоростью мёда';
+const passportEntry = await getEntry('passport', 'passport');
+const Passport = passportEntry ? (await render(passportEntry)).Content : null;
+
+const series = await getPublishedSeries();
+const cards = await Promise.all(
+  series.map(async (s) => ({ data: s.data, episodes: (await getEpisodes(s.data.id)).length })),
+);
+
 const tagline = 'Здесь время течёт со скоростью мёда.';
 const buildDate = new Date().toLocaleString('ru-RU', {
   timeZone: 'Europe/Moscow',
-  day: '2-digit', month: '2-digit', year: 'numeric',
-  hour: '2-digit', minute: '2-digit',
+  day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
 });
 ---
 
-<html lang="ru">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} — образец типографики</title>
-    <meta name="description" content={tagline} />
-    <link rel="canonical" href="https://paceofhoney.me/" />
-    <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+<BaseLayout title="Со скоростью мёда" description={tagline}>
+  <div class="container">
+    <section class="section">
+      <p class="mono muted">00 / витрина компонентов</p>
+      <h1>Со скоростью мёда<span class="dot">.</span></h1>
+      {Passport && <div class="text measure passport"><Passport /></div>}
+      <p class="mono muted hint">
+        Пролистай вниз — меню уедет вверх. Дёрни обратно — вернётся.
+        На узком экране вместо меню появится кнопка со шторкой.
+      </p>
+    </section>
 
-    {/* Выбор темы до первой отрисовки. Скрипт блокирующий и намеренно
-        крошечный: без него читатель в тёмной теме получает вспышку белого
-        на каждой странице. ТЗ 2.3. */}
-    <script is:inline>
-      (function () {
-        try {
-          var t = localStorage.getItem('theme');
-          if (!t) {
-            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          if (t === 'dark') document.documentElement.classList.add('dark');
-        } catch (e) { /* приватный режим — просто остаёмся в светлой теме */ }
-      })();
-    </script>
-  </head>
+    <section class="section">
+      <p class="mono muted">01 / карточки серий</p>
+      {cards.length > 0 ? (
+        <div class="cards">
+          {cards.map((c) => (
+            <SeriesCard
+              id={c.data.id} title={c.data.title} description={c.data.description}
+              icon={c.data.icon} cover={c.data.cover_image} coverAlt={c.data.cover_alt}
+              episodes={c.episodes}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="muted">
+          Серий пока нет. Отладочная лежит с пометкой «черновик» и в этот список
+          не попадает — так и задумано.
+        </p>
+      )}
+    </section>
 
-  <body>
-    <a class="skip-to-main" href="#main">Перейти к содержанию</a>
+    <section class="section">
+      <p class="mono muted">02 / шкала заголовков</p>
+      <h2>Пчелиный фаервол</h2>
+      <h3>Глава восьмая: пузырь надувается</h3>
+      <h4>Что случилось на пасеке в четверг</h4>
+    </section>
 
-    <div class="container">
-      <header class="topbar">
-        <span class="mono">paceofhoney.me</span>
-        <button id="themeToggle" type="button" class="toggle mono"
-                aria-label="Переключить тему">
-          <span class="theme-hide-dark">тёмная тема</span>
-          <span class="theme-hide-light">светлая тема</span>
-        </button>
-      </header>
+    <section class="section">
+      <p class="mono muted">03 / основной текст · Onest</p>
+      <div class="text measure">
+        <p>
+          Абзац набран тем шрифтом, которым будут набраны все главы: гротеск
+          Onest, переменного начертания, с полной кириллицей. Проверяем на
+          длинных словах вроде «достопримечательность» и на знаках препинания —
+          тире, кавычки-«ёлочки», многоточие…
+        </p>
+      </div>
+    </section>
 
-      <main id="main">
-        <section class="section">
-          <p class="mono muted">01 / основной текст · Onest</p>
-          <h1>{title}<span class="dot">.</span></h1>
-          <div class="text measure">
-            <p>
-              Суверенный медиапроект о выходе из цифровой «Карусели». Этот абзац
-              набран тем шрифтом, которым будут набраны все главы: гротеск Onest,
-              переменного начертания, с полной кириллицей. Проверяем на длинных
-              словах вроде «достопримечательность» и на знаках препинания —
-              тире, кавычки-«ёлочки», многоточие…
-            </p>
-            <p>
-              Ещё абзац, чтобы оценить межстрочное расстояние и то, как ложится
-              строка. Ширина колонки ограничена: около девяноста знаков — предел,
-              после которого глаз теряет начало следующей строки.
-            </p>
-          </div>
-        </section>
+    <section class="section">
+      <p class="mono muted">04 / служебный шрифт · Geist Mono</p>
+      <p class="mono muted plate">📖 Сериал «НектарАкции» · Глава 8 из 10</p>
+      <p class="mono muted">20 августа 2026 · 1 234 знака · #пчёлы #финансы</p>
+    </section>
 
-        <section class="section">
-          <p class="mono muted">02 / шкала заголовков</p>
-          <h2>Пчелиный фаервол</h2>
-          <h3>Глава восьмая: пузырь надувается</h3>
-          <h4>Что случилось на пасеке в четверг</h4>
-        </section>
+    <section class="section">
+      <p class="mono muted">05 / акцентная антиква · Playfair Display</p>
+      <p class="display slogan">{tagline}</p>
+    </section>
 
-        <section class="section">
-          <p class="mono muted">03 / служебный шрифт · Geist Mono</p>
-          <nav class="menu mono">
-            <span class="active">00: главная</span>
-            <span>01: манифест</span>
-            <span>02: серии</span>
-            <span>03: о нас</span>
-          </nav>
-          <p class="mono muted plate">📖 Сериал «НектарАкции» · Глава 8 из 10</p>
-          <p class="mono muted">20 августа 2026 · 1 234 знака · #пчёлы #финансы</p>
-        </section>
+    <section class="section">
+      <p class="mono muted">06 / палитра и акцент</p>
+      <ul class="swatches mono">
+        <li><span class="chip chip--honey"></span>мёд #E8A33D · заливка</li>
+        <li><span class="chip chip--accent"></span>акцент · меняется с темой</li>
+      </ul>
+      <p class="accent-demo">
+        Так выглядит <a href="#main">акцентная ссылка</a> в текущей теме.
+        В светлой это тёмный мёд, в тёмной — янтарь во всю силу.
+      </p>
+    </section>
 
-        <section class="section">
-          <p class="mono muted">04 / акцентная антиква · Playfair Display</p>
-          <p class="display slogan">{tagline}</p>
-        </section>
+    <section class="section">
+      <p class="mono muted">07 / проявление при прокрутке</p>
+      <p class="muted measure">
+        Эти блоки всплывают снизу, когда въезжают в кадр. Тем же механизмом
+        будут проявляться фотографии — им отведена средняя треть экрана.
+      </p>
+      <div class="risers">
+        {[1, 2, 3].map((n) => (
+          <div class="riser theme-border" data-fade-up><span class="mono">блок {n}</span></div>
+        ))}
+      </div>
+    </section>
 
-        <section class="section">
-          <p class="mono muted">05 / палитра</p>
-          <ul class="swatches mono">
-            <li><span class="chip chip--dark"></span>графит #111827</li>
-            <li><span class="chip chip--light"></span>молоко #F9FAFB</li>
-            <li><span class="chip chip--honey"></span>мёд #E8A33D · заливка</li>
-            <li><span class="chip chip--accent"></span>акцент · меняется с темой</li>
-          </ul>
+    <p class="mono muted stamp">каркас собран · {buildDate}</p>
+  </div>
 
-          <p class="accent-demo">
-            Так выглядит <a href="#main">акцентная ссылка</a> в текущей теме.
-            Переключи тему и сравни: в светлой это тёмный мёд, в тёмной —
-            янтарь во всю силу. Один цвет на обе темы не держит контраст.
-          </p>
-        </section>
+  <Footer slot="footer" />
+</BaseLayout>
 
-        <hr class="theme-border rule" />
-        <p class="mono muted">каркас собран · {buildDate}</p>
-      </main>
-    </div>
+<style>
+  .muted { opacity: .5; }
+  .dot   { color: var(--accent); }
+  .measure { max-width: 34rem; }
+  .passport { margin-top: 1rem; }
+  .hint { margin-top: 1.5rem; max-width: 34rem; line-height: 1.5; }
 
-    <script>
-      const btn = document.getElementById('themeToggle');
-      btn?.addEventListener('click', () => {
-        const dark = document.documentElement.classList.toggle('dark');
-        try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
-      });
-    </script>
+  .cards {
+    display: grid; gap: 2.5rem; margin-top: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  }
 
-    <style>
-      body { padding-bottom: 6rem; }
+  .plate { margin-bottom: .5rem; }
+  .slogan { margin-top: 1rem; }
 
-      .topbar {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 1.5rem 0;
-      }
-      .toggle {
-        background: none; border: 1px solid currentColor; color: inherit;
-        padding: .35rem .9rem; border-radius: 8rem; cursor: pointer;
-        transition: transform var(--t-fast);
-      }
-      .toggle:hover { transform: scale(1.04); }
+  .swatches { list-style: none; display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 1rem 0 0; padding: 0; }
+  .swatches li { display: flex; align-items: center; gap: .5rem; }
+  .chip { width: 1.75rem; height: 1.75rem; border-radius: var(--radius); border: 1px solid currentColor; }
+  .chip--honey  { background: var(--honey); }
+  .chip--accent { background: var(--accent); }
 
-      .muted { opacity: .5; }
-      .dot   { color: var(--accent); }
+  .accent-demo { max-width: 34rem; margin-top: 1.5rem; line-height: 1.6; }
+  .accent-demo a { color: var(--accent); text-underline-offset: .18em; }
 
-      .accent-demo { max-width: 34rem; margin-top: 1.5rem; line-height: 1.6; }
-      .accent-demo a {
-        color: var(--accent);
-        text-decoration-thickness: .08em;
-        text-underline-offset: .18em;
-      }
+  .risers { display: grid; gap: 1rem; margin-top: 1.5rem; }
+  .riser {
+    display: grid; place-items: center; height: 8rem;
+    border: 1px solid; border-radius: var(--radius); opacity: 0;
+    transform: translateY(2rem);
+    transition: opacity 1s ease, transform 1s ease;
+  }
+  .riser.fade-up { opacity: 1; transform: translateY(0); }
 
-      .measure { max-width: 34rem; margin-top: 1rem; }
-
-      .menu { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: .75rem 0 1.5rem; }
-      .menu .active { font-weight: 700; }
-
-      .plate { margin-bottom: .5rem; }
-
-      .slogan { font-size: clamp(1.75rem, 5vw, 3.25rem); line-height: 1.2; margin-top: 1rem; }
-
-      .swatches { list-style: none; display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem; }
-      .swatches li { display: flex; align-items: center; gap: .5rem; }
-      .chip { width: 1.75rem; height: 1.75rem; border-radius: var(--radius); border: 1px solid currentColor; }
-      .chip--dark  { background: #111827; }
-      .chip--light { background: #F9FAFB; }
-      .chip--honey  { background: var(--honey); }
-      .chip--accent { background: var(--accent); }
-
-      .rule { margin: clamp(3rem, 8vw, 6rem) 0 1rem; border: none; border-top: 1px solid; }
-    </style>
-  </body>
-</html>
+  .stamp { margin-top: clamp(3rem, 8vw, 5rem); }
+</style>

@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { unified } from '@astrojs/markdown-remark';
 import { remarkObsidian } from './src/plugins/remark-obsidian.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
@@ -40,15 +41,16 @@ export default defineConfig({
   },
 
   markdown: {
-    // Перевод синтаксиса Obsidian: [[ссылки]] и ![[вложения]].
+    // Обработчик Markdown выбирается явно.
     //
-    // Наличие remarkPlugins переводит Astro 7 с нового обработчика Markdown
-    // (Sätteri) обратно на unified/remark — для этого и стоит в зависимостях
-    // @astrojs/markdown-remark. Осознанный размен: теряем скорость нового
-    // обработчика, получаем зрелую экосистему remark, на которой написан
-    // наш переводчик синтаксиса Obsidian. Сборка сайта на 20 страниц —
-    // полторы секунды, экономить тут нечего.
-    remarkPlugins: [[remarkObsidian, { root: process.cwd() }]],
+    // По умолчанию в Astro 7 стоит новый быстрый Sätteri, но наш переводчик
+    // синтаксиса Obsidian ([[ссылки]] и ![[вложения]]) написан под remark.
+    // Поэтому переключаемся на unified — осознанный размен: теряем скорость
+    // нового обработчика, получаем зрелую экосистему. Сборка сайта на два
+    // десятка страниц занимает полторы секунды, экономить тут нечего.
+    processor: unified({
+      remarkPlugins: [[remarkObsidian, { root: process.cwd() }]],
+    }),
     // Подсветку кода настроим, когда появятся технические статьи.
     shikiConfig: { theme: 'github-dark', wrap: true },
   },

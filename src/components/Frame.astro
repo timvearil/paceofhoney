@@ -1,0 +1,96 @@
+---
+/**
+ * Фотокадр с проявлением цвета.
+ *
+ * Вне фокуса внимания кадр монохромный и чуть приглушённый — интерфейс
+ * остаётся невидимой рамкой, цвет не растаскивает взгляд по странице.
+ * В фокусе за 0.4 секунды наливается цветом и тёплым вольфрамовым светом.
+ *
+ * Что считается фокусом:
+ *   мышь есть     — наведение курсора
+ *   мыши нет      — въезд в среднюю треть экрана, класс .in-focus от наблюдателя
+ *
+ * Привязка к наличию мыши, а не к ширине экрана: планшет с сенсором бывает
+ * шире ноутбука, и при старой формулировке кадры на нём не проявлялись бы
+ * никогда (ТЗ 2.5.2).
+ *
+ * Спецификация: 01_Spec/tz-paceofhoney-v2.md, раздел 2.5.4
+ */
+
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  caption?: string;
+  /** Ведущий кадр страницы грузится сразу, остальные — по мере прокрутки. */
+  eager?: boolean;
+  ratio?: string;
+}
+
+const { src, alt, caption, eager = false, ratio } = Astro.props;
+---
+
+<figure class="frame">
+  <div class="shot" data-focus-frame style={ratio ? `aspect-ratio:${ratio}` : undefined}>
+    <Image
+      src={src}
+      alt={alt}
+      widths={[640, 960, 1280, 1920]}
+      sizes="(min-width: 64rem) 60rem, 100vw"
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : 'auto'}
+    />
+  </div>
+  {caption && <figcaption class="mono">{caption}</figcaption>}
+</figure>
+
+<style>
+  .frame { margin: 0; }
+
+  .shot {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: var(--radius);
+  }
+
+  .shot :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%);
+    opacity: .85;
+    transition: filter var(--t-color) ease, opacity var(--t-color) ease;
+  }
+
+  /*
+    Тёплый вольфрамовый свет отдельным слоем. Анимируется только opacity —
+    браузер делает это на видеокарте, не перерисовывая кадр.
+  */
+  .shot::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 40%,
+                rgba(232, 163, 61, .18), transparent 70%);
+    mix-blend-mode: soft-light;
+    opacity: 0;
+    transition: opacity var(--t-color) ease;
+  }
+
+  .shot.in-focus :global(img) { filter: grayscale(0%); opacity: 1; }
+  .shot.in-focus::after { opacity: 1; }
+
+  /* Там, где есть мышь, фокусом считается наведение. */
+  @media (hover: hover) and (pointer: fine) {
+    .shot:hover :global(img) { filter: grayscale(0%); opacity: 1; transform: scale(1.02); }
+    .shot:hover::after { opacity: 1; }
+    .shot :global(img) { transition: filter var(--t-color) ease, opacity var(--t-color) ease,
+                                     transform var(--t-color) ease; }
+  }
+
+  figcaption { margin-top: .6rem; opacity: .5; }
+</style>

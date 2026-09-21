@@ -1,0 +1,66 @@
+---
+/**
+ * Общая оболочка всех страниц: <html>, шапка, место под содержимое.
+ *
+ * Подвал сюда не входит намеренно. Он есть у статических страниц
+ * (PageLayout) и полностью отсутствует у эпизодов (EpisodeLayout),
+ * чтобы не разрывать поток чтения — ТЗ 4.5.1.
+ */
+
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+
+import '@fontsource-variable/onest';
+import '@fontsource-variable/geist-mono';
+import '@fontsource-variable/playfair-display';
+import '../styles/tokens.css';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedAt?: Date;
+  updatedAt?: Date;
+}
+---
+
+<html lang="ru">
+  <head>
+    <BaseHead {...Astro.props} />
+  </head>
+
+  <body>
+    <a class="skip-to-main" href="#main">Перейти к содержанию</a>
+
+    <Header>
+      <slot name="plate" slot="plate" />
+    </Header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <slot name="footer" />
+
+    <script>
+      import { startChrome, startDrawer } from '../scripts/chrome.js';
+      import { startReveal } from '../scripts/reveal.js';
+
+      startChrome();
+      startDrawer();
+      startReveal();
+
+      document.getElementById('themeToggle')?.addEventListener('click', () => {
+        const dark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+      });
+    </script>
+
+    <style is:global>
+      /* Отступ под фиксированной шапкой. Плашка серии на страницах эпизодов
+         добавляет к нему свою высоту переменной --plate-height. */
+      body { padding-top: calc(4.5rem + var(--plate-height, 0px)); }
+    </style>
+  </body>
+</html>
