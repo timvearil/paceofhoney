@@ -105,8 +105,15 @@ const buildDate = new Date().toLocaleString('ru-RU', {
           <ul class="swatches mono">
             <li><span class="chip chip--dark"></span>графит #111827</li>
             <li><span class="chip chip--light"></span>молоко #F9FAFB</li>
-            <li><span class="chip chip--amber"></span>янтарь #E8A33D</li>
+            <li><span class="chip chip--honey"></span>мёд #E8A33D · заливка</li>
+            <li><span class="chip chip--accent"></span>акцент · меняется с темой</li>
           </ul>
+
+          <p class="accent-demo">
+            Так выглядит <a href="#main">акцентная ссылка</a> в текущей теме.
+            Переключи тему и сравни: в светлой это тёмный мёд, в тёмной —
+            янтарь во всю силу. Один цвет на обе темы не держит контраст.
+          </p>
         </section>
 
         <hr class="theme-border rule" />
@@ -137,7 +144,14 @@ const buildDate = new Date().toLocaleString('ru-RU', {
       .toggle:hover { transform: scale(1.04); }
 
       .muted { opacity: .5; }
-      .dot   { color: var(--amber); }
+      .dot   { color: var(--accent); }
+
+      .accent-demo { max-width: 34rem; margin-top: 1.5rem; line-height: 1.6; }
+      .accent-demo a {
+        color: var(--accent);
+        text-decoration-thickness: .08em;
+        text-underline-offset: .18em;
+      }
 
       .measure { max-width: 34rem; margin-top: 1rem; }
 
@@ -153,7 +167,8 @@ const buildDate = new Date().toLocaleString('ru-RU', {
       .chip { width: 1.75rem; height: 1.75rem; border-radius: var(--radius); border: 1px solid currentColor; }
       .chip--dark  { background: #111827; }
       .chip--light { background: #F9FAFB; }
-      .chip--amber { background: #E8A33D; }
+      .chip--honey  { background: var(--honey); }
+      .chip--accent { background: var(--accent); }
 
       .rule { margin: clamp(3rem, 8vw, 6rem) 0 1rem; border: none; border-top: 1px solid; }
     </style>
