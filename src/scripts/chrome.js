@@ -26,6 +26,21 @@ export function startChrome() {
   const header = document.getElementById('site-header');
   if (!header) return;
 
+  /*
+   * Отступ под шапкой меряется, а не задаётся числом.
+   *
+   * Высота шапки разная: на статических страницах это одна строка с меню,
+   * на страницах глав — ещё и плашка серии, а она переносится на две строки
+   * при длинном названии сериала и на узком экране. Любая константа тут
+   * однажды окажется маленькой, и текст уедет под плашку.
+   */
+  const measure = () =>
+    document.documentElement.style.setProperty('--chrome-height', `${header.offsetHeight}px`);
+
+  measure();
+  if ('ResizeObserver' in window) new ResizeObserver(measure).observe(header);
+  window.addEventListener('resize', measure, { passive: true });
+
   let last = window.scrollY;
   let ticking = false;
 

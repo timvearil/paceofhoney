@@ -180,6 +180,45 @@ h4, .h4 { line-height: 1.2;
 .post-content hr        { border: none; margin: 2rem 0; text-align: center; }
 .post-content hr::after { content: "~"; font-family: var(--ff-mono); font-size: var(--fs-sm); }
 
+/* -----------------------------------------------------------------------
+   Где в тексте появляется акцентная антиква.
+
+   Автор нигде не называет шрифт: он ставит смысловой знак, а шрифт назначает
+   эта таблица. Так оформление можно поменять один раз, не трогая ни одной
+   статьи.
+
+   Дополнительная причина: у Onest нет курсива. Написанное звёздочками
+   браузер наклонял бы искусственно — буквы просто скашиваются, и на
+   геометрическом гротеске это заметно. У Playfair настоящий курсив с
+   кириллицей, поэтому выделения в тексте отдаём ему. Заодно антиква
+   получает то самое журнальное присутствие, ради которого и бралась.
+   -------------------------------------------------------------------- */
+
+/* *выделение* — курсивная антиква прямо в потоке текста */
+.post-content em {
+  font-family: var(--ff-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.04em;      /* у антиквы иной рост строчных, иначе кажется мельче */
+  letter-spacing: 0;
+}
+
+/* > цитата — крупная антиква с янтарной чертой слева */
+.post-content blockquote {
+  font-family: var(--ff-display);
+  font-weight: 500;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  line-height: 1.35;
+  margin: 2rem 0;
+  padding-left: 1.25rem;
+  border-left: 2px solid var(--accent);
+}
+.post-content blockquote p { font-size: inherit; line-height: inherit; }
+.post-content blockquote p:last-child { margin-bottom: 0; }
+
+/* **важное** остаётся гротеском: плотность вместо смены шрифта */
+.post-content strong { font-weight: var(--bold); }
+
 /* =============================================================================
    Сетка
    ========================================================================== */
@@ -220,6 +259,33 @@ a:focus-visible, button:focus-visible {
  * прозрачность, цвет, фильтр. Всё, что связано с перемещением и масштабом,
  * переключается мгновенно.
  */
+/* =============================================================================
+   Печать
+   ========================================================================== */
+
+@media print {
+  /* На бумаге нет ни тёмной темы, ни наведения курсора. */
+  html, html.dark { background: #fff !important; color: #000 !important; }
+
+  /* Навигация, переключатели и графический цоколь на листе бесполезны. */
+  .site-header, .drawer, .overlay, .skip-to-main, .bookend, .onward { display: none !important; }
+
+  body { padding-top: 0 !important; }
+
+  /* Адрес ссылки печатается рядом с текстом: на бумаге по ней не кликнуть. */
+  .post-content a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: .85em;
+    word-break: break-all;
+  }
+
+  /* Заголовок не должен оставаться один внизу листа, абзац — рваться пополам. */
+  h1, h2, h3, h4 { break-after: avoid-page; }
+  p, blockquote, figure, img { break-inside: avoid; }
+
+  .post-content { max-width: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;

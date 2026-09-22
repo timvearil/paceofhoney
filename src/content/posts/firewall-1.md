@@ -5,6 +5,9 @@ description: "У входа в улей стоит охрана, которая 
 series:
   - pchelinyy-faervol
   - ironichnaya-paseka
+lead_image: "../_attachments/visp.jpg"
+lead_alt: "Вертикальная обложка с формулой ВИСП"
+lead_caption: "ВИСП — проверка вертикального кадра"
 date: 2026-08-10
 draft: true
 tags: ["кибербез", "пчёлы"]

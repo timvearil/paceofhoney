@@ -65,35 +65,121 @@ export async function getEpisodes(seriesId: string): Promise<Post[]> {
   return posts.filter((p) => p.data.series.includes(seriesId)).sort(byStory);
 }
 
-/**
- * Место статьи в серии и её соседи.
- *
- * Серию можно указать явно — для будущего режима «читаю через ту серию,
- * из которой пришёл». По умолчанию берётся ведущая.
- */
-export async function getPlacement(post: Post, seriesId?: string) {
-  const id = seriesId ?? leadSeriesId(post);
-  if (!id) return null;
+/* ------------------------------------------------------------------------
+   НИТЬ ЧТЕНИЯ
+   --------------------------------------------------------------------- */
 
-  const episodes = await getEpisodes(id);
+/**
+ * Одна и та же статья читается по-разному в зависимости от того, откуда
+ * читатель пришёл. Первая глава «НектарАкций» — она же вторая глава
+ * «Ироничной пасеки», и следующая за ней в каждом случае своя.
+ *
+ * Эта серия — «нить». Она не свойство статьи, а свойство **пути**, которым
+ * идёт читатель, и потому живёт в адресе страницы, а не в метаданных.
+ *
+ *   /posts/nektar-1                        — ведущая нить статьи
+ *   /series/ironichnaya-paseka/nektar-1    — та же глава другой нитью
+ *
+ * Раньше нить передавалась пометкой `?s=` в адресе. Пометку видел только
+ * браузер, сервер о ней не знал — и рисовал страницу по ведущей серии, а
+ * браузер потом дописывал правду поверх. Заплаток требовалось по одной на
+ * каждый элемент страницы: плашка и поток их получили, блок «также входит
+ * в», полка и мост — нет, и врали. Теперь нить известна на сборке, и каждый
+ * элемент считает своё сам.
+ */
+
+/**
+ * Адрес главы внутри нити.
+ *
+ * Ведущая нить живёт по короткому адресу: он же канонический, его видит
+ * поисковик и его копируют в мессенджер. Остальные нити — с серией впереди.
+ */
+export function chapterHref(post: Post, seriesId: string): string {
+  return seriesId === leadSeriesId(post)
+    ? `/posts/${post.data.slug}`
+    : `/series/${seriesId}/${post.data.slug}`;
+}
+
+/** Канонический адрес главы — один на все нити. */
+export const canonicalHref = (post: Post) => `/posts/${post.data.slug}`;
+
+/**
+ * Адрес фрагмента для бесшовного потока — всегда адрес главы плюс `/partial`.
+ * Единое правило, чтобы не заводить второй способ считать адреса.
+ */
+export const partialHref = (post: Post, seriesId: string) => `${chapterHref(post, seriesId)}/partial`;
+
+export interface Thread {
+  /** Серия, по которой читают. */
+  series: Series;
+  number: number;
+  total: number;
+  prev: Post | null;
+  next: Post | null;
+  /** Первая глава нити — для ссылки «начать сначала». */
+  first: Post | null;
+}
+
+/** Место статьи в нити и её соседи. Единственный источник этих чисел. */
+export async function getThread(
+  post: Post,
+  seriesId: string,
+  all?: Series[],
+): Promise<Thread | null> {
+  const series = (all ?? (await getPublishedSeries())).find((s) => s.data.id === seriesId);
+  if (!series) return null;
+
+  const episodes = await getEpisodes(seriesId);
   const i = episodes.findIndex((e) => e.data.slug === post.data.slug);
   if (i < 0) return null;
 
   return {
-    seriesId: id,
+    series,
     number: i + 1,
     total: episodes.length,
     prev: i > 0 ? episodes[i - 1] : null,
     next: i < episodes.length - 1 ? episodes[i + 1] : null,
+    first: episodes[0] ?? null,
   };
 }
 
-/** Все серии статьи с их данными — для блока «Эта глава также входит в…». */
-export async function getSeriesOf(post: Post): Promise<Series[]> {
-  const all = await getPublishedSeries();
-  return post.data.series
-    .map((id) => all.find((s) => s.data.id === id))
-    .filter((s): s is Series => Boolean(s));
+/**
+ * Пары «статья × неведущая серия» — маршруты `/series/{id}/{slug}`.
+ *
+ * Ведущая нить сюда не попадает: она уже обслужена коротким адресом
+ * `/posts/{slug}`, и второй маршрут на тот же текст был бы лишним.
+ */
+export async function getSideThreads(): Promise<{ post: Post; seriesId: string }[]> {
+  const posts = await getPublishedPosts();
+  const known = new Set((await getPublishedSeries()).map((s) => s.data.id));
+
+  return posts.flatMap((post) =>
+    post.data.series
+      .slice(1)
+      .filter((id) => known.has(id))
+      .map((seriesId) => ({ post, seriesId })),
+  );
+}
+
+/**
+ * Серии для витрины и каталога: сколько глав и куда ведёт кнопка «читать».
+ *
+ * Считается здесь, а не на страницах: адрес первой главы зависит от того,
+ * ведущая ли это серия для неё, и расходиться такой расчёт по двум страницам
+ * не должен.
+ */
+export async function getSeriesCards() {
+  const series = await getPublishedSeries();
+  return Promise.all(
+    series.map(async (s) => {
+      const eps = await getEpisodes(s.data.id);
+      return {
+        data: s.data,
+        episodes: eps.length,
+        readHref: eps[0] ? chapterHref(eps[0], s.data.id) : undefined,
+      };
+    }),
+  );
 }
 
 /* ------------------------------------------------------------------------

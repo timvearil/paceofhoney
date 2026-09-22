@@ -12,6 +12,12 @@ interface Props {
   type?: 'website' | 'article';
   publishedAt?: Date;
   updatedAt?: Date;
+  /**
+   * Настоящий адрес страницы, если он отличается от того, по которому её
+   * открыли. Глава доступна несколькими адресами — по одному на серию,
+   * в которую входит, — но текст один, и поисковику показываем один.
+   */
+  canonicalPath?: string;
 }
 
 const {
@@ -21,13 +27,20 @@ const {
   type = 'website',
   publishedAt,
   updatedAt,
+  canonicalPath,
 } = Astro.props;
 
 const SITE_NAME = 'Со скоростью мёда';
 
 // Канонический адрес и картинка — абсолютными URL. Мессенджеры относительные
 // пути не разбирают и показывают превью без картинки.
-const canonical = new URL(Astro.url.pathname, Astro.site);
+//
+// Расширение из адреса убирается: файлы собираются как `about.html`, но
+// публичный адрес страницы — `/about`. Если оставить как есть, поисковик
+// сочтёт настоящим адресом тот, что с расширением, и в выдачу пойдёт он.
+const cleanPath =
+  canonicalPath ?? Astro.url.pathname.replace(/\.html$/, '').replace(/^\/index$/, '/');
+const canonical = new URL(cleanPath, Astro.site);
 const imageUrl = new URL(image, Astro.site);
 const fullTitle = title === SITE_NAME ? title : `${title} — ${SITE_NAME}`;
 ---

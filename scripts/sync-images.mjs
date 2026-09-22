@@ -89,23 +89,33 @@ async function contentFiles() {
 }
 
 /**
- * Имена картинок, упомянутых в тексте.
+ * Имена картинок, упомянутых в тексте, и откуда именно.
  *
- * Ловим и обсидиановское ![[кадр.jpg]], и обычное указание имени файла
- * в метаданных: lead_image, cover_image, bookend_light и подобные.
+ * Различать источник обязательно, потому что правила у них разные.
+ *
+ * В теле статьи `![[кадр.jpg]]` можно писать по-русски: имя переводит
+ * в латиницу плагин разметки, сверяясь с картой соответствий.
+ *
+ * А в метаданных (`lead_image`, `cover_image`, `bookend_*`) стоит путь,
+ * который Astro открывает буквально, никакой карты не читая. Значит имя
+ * там должно быть уже латинским — тем, под которым файл лёг в репозиторий.
+ * Русское имя обрушило бы сборку сообщением «файл не найден», и автор
+ * искал бы причину сам.
+ *
+ * Возвращаем `Map: имя → 'wiki' | 'meta'`.
  */
 function mentionedImages(text) {
-  const names = new Set();
+  const found = new Map();
 
   for (const m of text.matchAll(/!\[\[([^\]|#]+)/g)) {
     const n = m[1].trim();
-    if (IMAGE_EXT.test(n)) names.add(n);
+    if (IMAGE_EXT.test(n)) found.set(n, 'wiki');
   }
   for (const m of text.matchAll(/^\s*\w*(?:image|art|cover|bookend\w*):\s*["']?([^"'\n]+)/gim)) {
     const n = path.basename(m[1].trim());
-    if (IMAGE_EXT.test(n)) names.add(n);
+    if (IMAGE_EXT.test(n)) found.set(n, 'meta');
   }
-  return names;
+  return found;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -127,10 +137,12 @@ async function main() {
 
   // Помним не только имя кадра, но и где он упомянут: если файла не окажется,
   // сообщение должно называть статью, а не оставлять искать её руками.
-  const wanted = new Map(); // имя → набор файлов, где встретилось
+  const wanted = new Map(); // имя → { откуда, где встретилось }
   for (const file of await contentFiles()) {
-    for (const name of mentionedImages(await fs.readFile(file, 'utf8'))) {
-      wanted.set(name, (wanted.get(name) ?? new Set()).add(path.basename(file)));
+    for (const [name, kind] of mentionedImages(await fs.readFile(file, 'utf8'))) {
+      const seen = wanted.get(name) ?? { kind, where: new Set() };
+      seen.where.add(path.basename(file));
+      wanted.set(name, seen);
     }
   }
   if (wanted.size === 0) {
@@ -169,11 +181,25 @@ async function main() {
     if (path.extname(flat) === '.svg') {
       await fs.copyFile(from, to); // вектор ужимать нечем и незачем
     } else {
-      await sharp(from)
+      /*
+       * Формат выбираем по расширению, а не ставим jpeg всему подряд.
+       *
+       * Иначе PNG с прозрачностью приезжал бы в репозиторий как JPEG внутри
+       * файла с именем `.png`: прозрачность залита чёрным, а Astro определяет
+       * формат по расширению и работает с ним как с PNG. Ошибка тихая —
+       * видна только на готовой странице и только на тех кадрах, у которых
+       * есть что терять.
+       */
+      const pipeline = sharp(from)
         .rotate() // учесть поворот из данных камеры, иначе кадр ляжет боком
-        .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: QUALITY, mozjpeg: true })
-        .toFile(to);
+        .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
+
+      const ext = path.extname(flat).toLowerCase();
+      if (ext === '.png') await pipeline.png({ compressionLevel: 9 }).toFile(to);
+      else if (ext === '.webp') await pipeline.webp({ quality: QUALITY }).toFile(to);
+      else if (ext === '.avif') await pipeline.avif({ quality: QUALITY }).toFile(to);
+      else if (ext === '.gif') await fs.copyFile(from, to); // анимацию не трогаем
+      else await pipeline.jpeg({ quality: QUALITY, mozjpeg: true }).toFile(to);
     }
 
     const after = await fs.stat(to);

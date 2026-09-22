@@ -94,7 +94,26 @@ function watchFrames() {
   });
 }
 
+/**
+ * Главы, подъехавшие в поток читалки, приходят уже после запуска наблюдателей.
+ * Читалка сообщает о них событием, и мы берём новые элементы под надзор —
+ * иначе кадры внутри подгруженной главы остались бы серыми навсегда.
+ */
+function watchAddedContent() {
+  document.addEventListener('honey:content-added', (e) => {
+    const root = e.detail?.el;
+    if (!root) return;
+
+    for (const [selector, className] of ONCE) {
+      root.querySelectorAll(selector).forEach((el) => el.classList.add(className));
+    }
+    root.querySelectorAll('[data-focus-frame]').forEach((el) => el.classList.add('in-focus'));
+  });
+}
+
 export function startReveal() {
+  watchAddedContent();
+
   if (!('IntersectionObserver' in window)) {
     showEverythingAtOnce();
     return;

@@ -1,0 +1,67 @@
+---
+/**
+ * Классический шаблон: манифест, о нас, будущая библиотека.
+ *
+ * Отличие от шаблона эпизодов — в том, чего здесь НЕТ: плашки серии,
+ * автоподгрузки следующей главы, смены адреса при прокрутке. Дочитав такую
+ * страницу, читатель упирается в подвал с навигацией, а не проваливается
+ * в следующий текст (ТЗ 3.3.2).
+ */
+
+import BaseLayout from './BaseLayout.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  updated?: Date;
+}
+
+const { title, description, updated } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} updatedAt={updated}>
+  <article class="container page">
+    <header class="head">
+      <h1>{title}</h1>
+      {updated && (
+        <p class="mono stamp">
+          обновлено {updated.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+      )}
+      <hr class="theme-border rule" data-unfurl />
+    </header>
+
+    <div class="post-content text">
+      <slot />
+    </div>
+
+    <p class="onward">
+      <a href="/series" class="link--right">Перейти к сериям и сюжетам <span>→</span></a>
+    </p>
+  </article>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .page { padding-top: clamp(2rem, 6vw, 4rem); }
+
+  .head { max-width: 48rem; }
+  .stamp { margin-top: .75rem; opacity: .45; }
+  .rule {
+    margin-top: 1.5rem;
+    border: none; border-top: 1px solid;
+    width: 0; transition: width var(--t-slow) ease;
+  }
+  .rule.unfurled { width: 100%; }
+
+  /* Ширина колонки: около девяноста знаков в строке — предел, после которого
+     глаз теряет начало следующей строки. */
+  .post-content { max-width: 40rem; margin-top: clamp(2rem, 5vw, 3rem); }
+
+  .onward { margin-top: clamp(3rem, 8vw, 5rem); }
+  .onward a { color: var(--accent); text-decoration: none; }
+  .onward a span { display: inline-block; transition: padding-left var(--t-fast); }
+  .onward a:hover span { padding-left: .5rem; }
+</style>

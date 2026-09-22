@@ -1,0 +1,33 @@
+---
+/**
+ * Фрагмент главы для бесшовного потока — боковая нить.
+ *
+ * Близнец `/posts/[slug]/partial.astro`, отличается только тем, откуда берёт
+ * серию. Разметка у обоих одна и живёт в компоненте `Episode`.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import Episode from '../../../../components/Episode.astro';
+import { getPublishedSeries, getSideThreads, getThread } from '../../../../lib/content';
+
+export const partial = true;
+
+export const getStaticPaths = (async () => {
+  const threads = await getSideThreads();
+  return threads.map(({ post, seriesId }) => ({
+    params: { id: seriesId, slug: post.data.slug },
+    props: { post, seriesId },
+  }));
+}) satisfies GetStaticPaths;
+
+const { post, seriesId } = Astro.props;
+const { Content } = await render(post);
+
+const allSeries = await getPublishedSeries();
+const thread = (await getThread(post, seriesId, allSeries))!;
+---
+
+<Episode post={post} thread={thread} allSeries={allSeries}>
+  <Content />
+</Episode>

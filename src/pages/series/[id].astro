@@ -1,0 +1,135 @@
+---
+/**
+ * Страница одной подборки: обложка, вводный текст, список глав.
+ *
+ * Сериал и подборка показываются по-разному. У сериала главы пронумерованы
+ * и идут от первой к последней — читателю обещан сюжет. У подборки номеров
+ * нет и порядок обратный, от свежего: там обещана тема, а не сюжет,
+ * и «Глава 12 из 40» сказала бы неправду.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Footer from '../../components/Footer.astro';
+import PostCard from '../../components/PostCard.astro';
+import { Image } from 'astro:assets';
+import { getEpisodes, chapterHref, assertContentIsSound } from '../../lib/content';
+
+export const getStaticPaths = (async () => {
+  await assertContentIsSound();
+
+  const series = await getCollection('series', (s) => import.meta.env.DEV || !s.data.draft);
+  return series.map((entry) => ({ params: { id: entry.data.id }, props: { entry } }));
+}) satisfies GetStaticPaths;
+
+const { entry } = Astro.props;
+const s = entry.data;
+const { Content } = await render(entry);
+
+/*
+ * Ссылки на главы идут через эту серию: из оглавления читатель уходит читать
+ * именно её и дальше движется ею же. Раньше здесь стояла голая ссылка на
+ * статью — и кликнув главу в оглавлении «Ироничной пасеки», читатель
+ * проваливался в «НектарАкции», её ведущую серию.
+ */
+const isSerial = s.kind === 'serial';
+const episodes = await getEpisodes(s.id);
+const listed = isSerial ? episodes : [...episodes].reverse();
+
+const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4 && (n < 12 || n > 14) ? 'главы' : 'глав');
+---
+
+<BaseLayout
+  title={s.title}
+  description={s.description}
+  image={s.cover_image?.src}
+>
+  <div class="container page">
+    <header class="head">
+      <p class="mono index">
+        02 / серии · {isSerial ? 'сериал' : 'подборка'}
+      </p>
+      <h1><span class="icon" aria-hidden="true">{s.icon}</span>{s.title}</h1>
+      <p class="lead text">{s.description}</p>
+      {episodes.length > 0 && (
+        <p class="mono count">{episodes.length} {word(episodes.length)}</p>
+      )}
+    </header>
+
+    {s.cover_image && (
+      <div class="cover" data-focus-frame>
+        <Image
+          src={s.cover_image} alt={s.cover_alt ?? ''}
+          widths={[768, 1280, 1920]} sizes="(min-width: 64rem) 60rem, 100vw" loading="eager"
+        />
+      </div>
+    )}
+
+    <div class="post-content text intro">
+      <Content />
+    </div>
+
+    <section class="section" aria-labelledby="eps">
+      <h2 id="eps" class="sr-only">Главы</h2>
+
+      {listed.length > 0 ? (
+        <div class="list">
+          {listed.map((p, i) => (
+            <PostCard
+              post={p}
+              number={isSerial ? i + 1 : undefined}
+              href={chapterHref(p, s.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="empty">В этой серии пока нет опубликованных глав.</p>
+      )}
+    </section>
+
+    <p class="onward">
+      <a href="/series" class="link--right">Все серии <span>→</span></a>
+    </p>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .page { padding-top: clamp(2rem, 6vw, 4rem); }
+  .index { opacity: .45; margin-bottom: 1rem; }
+  .icon { margin-right: .5rem; font-size: .75em; }
+  .lead { margin-top: 1.25rem; max-width: 38rem; line-height: 1.6; opacity: .8; font-size: var(--fs-lg); }
+  .count { margin-top: .75rem; opacity: .45; }
+
+  .cover {
+    position: relative; overflow: hidden; isolation: isolate;
+    margin-top: clamp(2rem, 5vw, 3rem);
+    border-radius: var(--radius);
+    aspect-ratio: 21 / 9;
+  }
+  .cover :global(img) {
+    width: 100%; height: 100%; object-fit: cover;
+    filter: grayscale(100%); opacity: .85;
+    transition: filter var(--t-color) ease, opacity var(--t-color) ease;
+  }
+  .cover::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 40%, rgba(232,163,61,.18), transparent 70%);
+    mix-blend-mode: soft-light; opacity: 0;
+    transition: opacity var(--t-color) ease;
+  }
+  .cover.in-focus :global(img) { filter: grayscale(0%); opacity: 1; }
+  .cover.in-focus::after { opacity: 1; }
+
+  .intro { max-width: 40rem; margin-top: clamp(2rem, 5vw, 3rem); }
+
+  .list { border-bottom: 1px solid; border-color: color-mix(in srgb, currentColor 18%, transparent); }
+  .empty { opacity: .5; }
+
+  .onward { margin-top: clamp(3rem, 8vw, 5rem); }
+  .onward a { color: var(--accent); text-decoration: none; }
+  .onward a span { display: inline-block; transition: padding-left var(--t-fast); }
+  .onward a:hover span { padding-left: .5rem; }
+</style>

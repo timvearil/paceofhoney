@@ -18,18 +18,42 @@ interface Props {
   cover?: ImageMetadata;
   coverAlt?: string;
   episodes?: number;
+  /**
+   * Адрес первой главы этой нити. Карточка ведёт сразу в чтение, а не
+   * в оглавление. Считает его вызывающий — он знает, о какой серии речь.
+   */
+  readHref?: string;
 }
 
-const { id, title, description, icon, cover, coverAlt, episodes } = Astro.props;
+const { id, title, description, icon, cover, coverAlt, episodes, readHref } = Astro.props;
+
+/*
+ * Карточка открывает чтение, а не оглавление.
+ *
+ * Раньше она вела на страницу серии, хотя кнопка обещала «открыть с 1-й главы».
+ * Получалось три клика от меню до текста и обещание, которого интерфейс не
+ * выполнял. Страница серии нужна для другого — выбрать произвольную главу,
+ * и ссылка на неё стоит отдельно, ниже.
+ *
+ * Пустая серия — исключение: вести некуда, открываем оглавление.
+ */
+/*
+ * Адрес называет серию, потому что от неё зависит всё дальнейшее чтение:
+ * номер главы, что подъедет следующим, чем кончится нить. Нажал «Ироничная
+ * пасека» — читаешь её, а не ту серию, которая у статьи записана первой.
+ */
+const to = readHref ?? `/series/${id}`;
 ---
 
 <article class="card" data-fade-up>
-  <a class="link" href={`/series/${id}`}>
+  <a class="link" href={to}>
     <div class="head">
       <h3 class="h3 title">
         <span class="icon" aria-hidden="true">{icon}</span>{title}
       </h3>
-      <p class="cta mono">открыть с 1-й главы →</p>
+      <p class="cta mono">
+        {readHref ? 'открыть с 1-й главы →' : 'смотреть серию →'}
+      </p>
     </div>
 
     {cover ? (
@@ -42,10 +66,19 @@ const { id, title, description, icon, cover, coverAlt, episodes } = Astro.props;
     )}
 
     <p class="desc">{description}</p>
-    {episodes !== undefined && (
-      <p class="count mono">{episodes} {episodes === 1 ? 'глава' : episodes < 5 ? 'главы' : 'глав'}</p>
-    )}
   </a>
+
+  {/*
+    Вторая ссылка — вне карточки-ссылки: вложенные ссылки в разметке
+    запрещены, а читателю нужны оба маршрута. Основной ведёт в чтение,
+    этот — в оглавление, откуда можно выбрать любую главу.
+  */}
+  <p class="foot mono">
+    {episodes !== undefined && (
+      <span class="count">{episodes} {episodes === 1 ? 'глава' : episodes < 5 ? 'главы' : 'глав'}</span>
+    )}
+    {readHref && <a class="toc" href={`/series/${id}`}>все главы</a>}
+  </p>
 </article>
 
 <style>
@@ -88,7 +121,11 @@ const { id, title, description, icon, cover, coverAlt, episodes } = Astro.props;
   }
 
   .desc { margin-top: .75rem; line-height: 1.5; font-size: var(--fs-sm); opacity: .75; }
-  .count { margin-top: .4rem; opacity: .45; }
+
+  .foot { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin-top: .5rem; }
+  .count { opacity: .45; }
+  .toc { color: var(--accent); text-decoration: none; }
+  .toc:hover { text-decoration: underline; text-underline-offset: .2em; }
 
   @media (hover: hover) and (pointer: fine) {
     .link:hover .cta { opacity: 1; transform: translateY(0); }

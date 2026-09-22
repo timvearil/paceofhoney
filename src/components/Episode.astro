@@ -1,0 +1,84 @@
+---
+/**
+ * Глава внутри потока чтения — единственное место, где она описана.
+ *
+ * Раньше эта разметка жила в двух экземплярах: один в шаблоне страницы,
+ * другой в отдельном фрагменте для подгрузки. Экземпляры расходились —
+ * правка доезжала до одного и забывалась во втором.
+ *
+ * Заголовок первой главы — `h1`, у подгруженных — `h2`. На странице должен
+ * быть ровно один `h1`: иначе к концу потока их пятнадцать, и разбор
+ * страницы — что чтение вслух, что поисковиком — разваливается (ТЗ 3.1.Б).
+ * Класс `h1` при этом остаётся, визуально разницы нет.
+ *
+ * Данные в `data-*` — всё, что нужно читалке. Она ничего не вычисляет:
+ * адреса приходят готовыми, посчитанными на сборке внутри нужной нити.
+ */
+
+import type { Post, Series, Thread } from '../lib/content';
+import { canonicalHref, chapterHref, partialHref } from '../lib/content';
+import AlsoIn from './AlsoIn.astro';
+import Frame from './Frame.astro';
+
+interface Props {
+  post: Post;
+  /** Нить, по которой читают: от неё зависят номер главы и следующая. */
+  thread: Thread;
+  allSeries: Series[];
+  /** Первая глава потока идёт с `h1`, подгруженные — с `h2`. */
+  top?: boolean;
+}
+
+const { post, thread, allSeries, top = false } = Astro.props;
+const d = post.data;
+const seriesId = thread.series.data.id;
+
+const when = d.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+const Heading = top ? 'h1' : 'h2';
+---
+
+<article
+  class="episode"
+  data-episode
+  data-slug={d.slug}
+  data-title={d.title}
+  data-number={thread.number}
+  data-total={thread.total}
+  data-href={chapterHref(post, seriesId)}
+  data-canonical={canonicalHref(post)}
+  data-next={thread.next ? partialHref(thread.next, seriesId) : ''}
+>
+  <header class="head">
+    <p class="mono over">Глава {thread.number} · {when}</p>
+    <Heading class={top ? undefined : 'h1'}>{d.title}</Heading>
+    <p class="lead text">{d.description}</p>
+  </header>
+
+  {d.lead_image && (
+    <div class="shot">
+      <Frame src={d.lead_image} alt={d.lead_alt ?? ''} caption={d.lead_caption} eager={top} />
+    </div>
+  )}
+
+  <div class="post-content text">
+    <slot />
+  </div>
+
+  {/* Прочие серии этой главы — кроме той, которой читатель уже идёт. */}
+  <AlsoIn post={post} exclude={seriesId} all={allSeries} />
+</article>
+
+<style>
+  .episode { padding-top: clamp(1.5rem, 5vw, 3rem); }
+
+  .over { opacity: .45; }
+  .head :global(h1), .head :global(h2) { margin-top: .5rem; max-width: 22ch; }
+  .lead {
+    margin-top: 1rem; max-width: 38rem;
+    font-size: var(--fs-lg); line-height: 1.55; opacity: .75;
+  }
+
+  .shot { margin-top: clamp(2rem, 5vw, 3rem); }
+
+  .post-content { max-width: 40rem; margin-top: clamp(2rem, 5vw, 3rem); }
+</style>

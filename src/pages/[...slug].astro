@@ -1,0 +1,37 @@
+---
+/**
+ * Общий маршрут статических страниц.
+ *
+ * Astro строит страницы по файлам, а адреса наших страниц заданы в их
+ * метаданных полем `permalink`. Поэтому один перехватывающий маршрут читает
+ * коллекцию `pages` и раздаёт адреса сам (ТЗ 4.3.4).
+ *
+ * Он же вызывает проверку целостности всего контента: повторяющиеся адреса,
+ * ссылки на несуществующие серии, неопределённый порядок глав. Проверка
+ * должна вызываться откуда-то — иначе она написана и мертва.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import { assertContentIsSound } from '../lib/content';
+
+export const getStaticPaths = (async () => {
+  await assertContentIsSound();
+
+  const pages = await getCollection('pages', (p) => import.meta.env.DEV || !p.data.draft);
+
+  return pages.map((page) => ({
+    // Ведущая косая черта убирается: маршрут получает путь без неё.
+    params: { slug: page.data.permalink.replace(/^\//, '') },
+    props: { page },
+  }));
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const { Content } = await render(page);
+---
+
+<PageLayout title={page.data.title} description={page.data.description} updated={page.data.updated}>
+  <Content />
+</PageLayout>

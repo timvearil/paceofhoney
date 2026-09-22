@@ -1,0 +1,100 @@
+---
+/**
+ * Верхняя плашка-ориентир: «📖 Сериал «…» · Глава N из M».
+ *
+ * Её задача — за полсекунды объяснить читателю, куда он попал. Половина
+ * приходит из поиска и мессенджеров прямо на восьмую главу, без всякого
+ * контекста (ТЗ 3.1.А).
+ *
+ * Живёт второй строкой внутри общей шапки, а не отдельным фиксированным
+ * элементом: два независимых `position: fixed` и создают то наложение,
+ * которого просило избежать ТЗ.
+ *
+ * Серию плашка не выбирает — её приносит нить чтения, известная из адреса
+ * страницы. Раньше здесь стоял скрипт, переписывавший плашку в браузере:
+ * сервер не знал, какой серией идёт читатель, и рисовал наугад. Теперь
+ * знает, и скрипт не нужен.
+ */
+
+import type { Series } from '../lib/content';
+
+interface Props {
+  series: Series;
+  number: number;
+  total: number;
+  /** Адрес первой главы нити. Пусто, если читатель и так в начале. */
+  firstHref?: string;
+}
+
+const { series, number, total, firstHref } = Astro.props;
+const s = series.data;
+---
+
+<div class="plate mono" data-plate>
+  <p class="where">
+    <span aria-hidden="true">{s.icon}</span>
+    <span class="name">{s.kind === 'serial' ? 'Сериал' : 'Подборка'} «{s.title}»</span>
+    <span class="sep" aria-hidden="true">·</span>
+    <span data-plate-count>Глава {number} из {total}</span>
+  </p>
+
+  <p class="ways">
+    {firstHref && <a class="first" href={firstHref}>01: начать с 1-й главы</a>}
+    <a href={`/series/${s.id}`}>📋 все главы серии</a>
+  </p>
+</div>
+
+<style>
+  .plate {
+    display: flex; flex-wrap: wrap; gap: .35rem 1.5rem;
+    align-items: baseline; justify-content: space-between;
+    width: clamp(18.5rem, 92%, 80rem);
+    margin: 0 auto;
+    padding: .55rem 1.25rem .7rem;
+    font-size: var(--fs-xs);
+
+    /*
+      Шапка объявлена сквозной для кликов, чтобы через пустое место рядом
+      с меню можно было попасть в страницу. Правило, возвращающее клики её
+      содержимому, живёт в стилях шапки — но плашка приходит из другого
+      компонента, а Astro изолирует стили по компонентам, и до неё то
+      правило не дотягивается. Возвращаем клики здесь, на месте.
+    */
+    pointer-events: auto;
+
+    border: 1px solid transparent;
+    border-radius: 0 0 var(--radius) var(--radius);
+    backdrop-filter: blur(.75rem);
+    transition: border-color var(--t-fast), background-color var(--t-fast);
+  }
+
+  /*
+    Фон нужен всегда, а не только после прокрутки, как у главного меню.
+    Меню наверху висит над пустым полем, а плашка — сразу над текстом главы:
+    без подложки строки просвечивают сквозь неё и обе становятся нечитаемы.
+  */
+  :global(html:not(.dark)) .plate { background-color: rgba(249, 250, 251, .88); }
+  :global(html.dark)       .plate { background-color: rgba(17, 24, 39, .88); }
+
+  :global(html:not(.dark)) :global(.site-header.scrolled) .plate {
+    border-color: rgba(17, 24, 39, .15);
+  }
+  :global(html.dark) :global(.site-header.scrolled) .plate {
+    border-color: rgba(249, 250, 251, .18);
+  }
+
+  .where { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
+  .name { font-weight: 700; }
+  .sep { opacity: .4; }
+
+  .ways { display: flex; flex-wrap: wrap; gap: 1rem; }
+  .ways a { color: var(--accent); text-decoration: none; white-space: nowrap; }
+  .ways a:hover { text-decoration: underline; text-underline-offset: .2em; }
+
+  /* На узком экране вторая строка плашки съедает половину экрана —
+     оставляем только ориентир, переходы есть в конце главы. */
+  @media (max-width: 34rem) {
+    .ways { display: none; }
+    .plate { padding-bottom: .5rem; }
+  }
+</style>

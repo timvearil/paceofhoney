@@ -1,0 +1,174 @@
+---
+/**
+ * «Полка с журналами» — что делать, дочитав главу.
+ *
+ * Три положения (ТЗ 3.1.В и 3.1.Г):
+ *   · есть следующая глава — ссылка на неё, крупно;
+ *   · серия дочитана — транзитный блок на следующий сериал;
+ *   · дочитан последний сериал — полка и кнопка на главную.
+ *
+ * Это обычные ссылки. Бесшовный поток подменит их прокруткой, но если
+ * скрипт не отработал, читатель всё равно знает, куда идти.
+ */
+
+import type { Post, Series } from '../lib/content';
+import { chapterHref, getEpisodes } from '../lib/content';
+
+interface Props {
+  next: Post | null;
+  /** Нить, которую читатель дочитывает. От неё считается всё ниже. */
+  thread: Series;
+  allSeries: Series[];
+}
+
+const { next, thread, allSeries } = Astro.props;
+
+const others = allSeries.filter((s) => s.data.id !== thread.data.id);
+
+/*
+ * Куда вести мостом, когда серия дочитана.
+ *
+ * Наивное «первая глава следующего сериала» при перекрёстном членстве часто
+ * предлагает то, что читатель только что прочёл: дочитав «НектарАкции», он
+ * получал бы приглашение в «Ироничную пасеку», которая начинается той же
+ * главой. Приглашение выглядит насмешкой.
+ *
+ * Поэтому ищем первую главу, которой НЕ было в дочитанной серии. Это чистая
+ * арифметика по спискам — никакого слежения за читателем, ничего не хранится.
+ * Серии, целиком уместившиеся в прочитанную, пропускаем: предлагать в них
+ * нечего.
+ */
+const readSlugs = new Set((await getEpisodes(thread.data.id)).map((p) => p.data.slug));
+
+let bridgeSeries = null;
+let bridgeEntry = null;
+for (const s of others) {
+  const fresh = (await getEpisodes(s.data.id)).find((p) => !readSlugs.has(p.data.slug));
+  if (fresh) {
+    bridgeSeries = s;
+    bridgeEntry = fresh;
+    break;
+  }
+}
+
+/*
+ * Полка «другие журналы» ведёт в оглавление, а не в первую главу.
+ *
+ * Причина та же, но решение другое: полка — это разглядывание, а не
+ * продолжение чтения. Читатель ещё не решил, браться ли за серию, и первая
+ * глава может оказаться прочитанной. Оглавление честнее: видно, что внутри,
+ * и видно, откуда начать.
+ */
+const shelf = others.slice(0, 2).map((s) => s);
+---
+
+<section class="shelf" data-shelf aria-label="Что дальше">
+  {/*
+    Блока «следующая глава» здесь больше нет: при непрерывной ленте он врёт
+    почти сразу — глава подъезжает сама, а ссылка продолжает звать туда же.
+
+    Но он был единственной навигацией вперёд без скриптов. Поэтому остаётся
+    в <noscript>: виден только тем, у кого поток не отработал, и ничего
+    не весит в обычной работе. Иначе такой читатель упирался бы в конец
+    главы без единого выхода — на узком экране особенно, там вторая строка
+    плашки со ссылкой на список глав скрыта.
+  */}
+  {next && (
+    <noscript>
+      <a class="onward" href={chapterHref(next, thread.data.id)}>
+        <p class="mono hint">следующая глава</p>
+        <p class="title h3">{next.data.title}</p>
+        <p class="mono go">читать дальше <span aria-hidden="true">→</span></p>
+      </a>
+    </noscript>
+  )}
+
+  {/*
+    Финал серии. От числа подгруженных глав не зависит: поток всегда идёт
+    по ведущей серии страницы, а она не меняется. Поэтому рисуется один раз
+    на сервере и ждёт своего часа — скрипт показывает его, когда подтягивать
+    больше нечего.
+  */}
+  <div class="finale" data-shelf-final hidden={Boolean(next)}>
+    <p class="mono hint">серия дочитана</p>
+    {bridgeSeries && bridgeEntry ? (
+      <>
+        <p class="bridge text">
+          Вы прочли все доступные главы серии «{thread.data.title}».
+          Следующий журнал на полке: <span aria-hidden="true">{bridgeSeries.data.icon}</span>
+          «{bridgeSeries.data.title}» — {bridgeEntry.data.title}.
+        </p>
+        {/* Адрес новой нити: дальше читатель идёт ею, и номера глав
+            считаются по ней. */}
+        <a class="mono go" href={chapterHref(bridgeEntry, bridgeSeries.data.id)}>
+          📖 читать дальше <span aria-hidden="true">→</span>
+        </a>
+      </>
+    ) : (
+      <p class="bridge text">
+        Вы прочли все доступные главы серии «{thread.data.title}».
+        Новые выходят по мере того, как пишутся.
+      </p>
+    )}
+  </div>
+
+  {shelf.length > 0 && (
+    <div class="racks">
+      <p class="mono hint">📚 другие журналы на столике</p>
+      <div class="grid">
+        {shelf.map((s) => (
+          <div class="rack">
+            <p class="name">
+              <span aria-hidden="true">{s.data.icon}</span> «{s.data.title}»
+            </p>
+            <p class="about">{s.data.description}</p>
+            <a class="mono open" href={`/series/${s.data.id}`}>
+              📋 оглавление серии
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <p class="home mono">
+    <a href="/">← вернуться на главную</a>
+  </p>
+</section>
+
+<style>
+  .shelf {
+    margin-top: clamp(4rem, 10vw, 7rem);
+    padding-top: clamp(2rem, 5vw, 3rem);
+    border-top: 1px solid;
+    border-color: color-mix(in srgb, currentColor 25%, transparent);
+  }
+
+  .hint { opacity: .45; }
+
+  /* Запасная навигация для страниц без скриптов — см. <noscript> выше. */
+  .onward { display: block; color: inherit; text-decoration: none; max-width: 40rem; }
+  .onward .title { margin-top: .5rem; }
+  .go {
+    display: inline-block; margin-top: 1rem;
+    color: var(--accent); text-decoration: none;
+  }
+
+  .finale { max-width: 40rem; }
+  .bridge { margin-top: .75rem; line-height: 1.6; }
+
+  .racks { margin-top: clamp(3rem, 7vw, 4.5rem); }
+  .grid {
+    display: grid; gap: 2rem; margin-top: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+  .rack { padding-top: 1rem; border-top: 1px solid; border-color: color-mix(in srgb, currentColor 18%, transparent); }
+  .name { font-weight: var(--bold); }
+  .about { margin-top: .4rem; font-size: var(--fs-sm); opacity: .7; line-height: 1.5; }
+  .open { display: inline-block; margin-top: .75rem; color: var(--accent); text-decoration: none; }
+  .open:hover { text-decoration: underline; text-underline-offset: .2em; }
+
+  .home { margin: clamp(3rem, 8vw, 5rem) 0 clamp(3rem, 8vw, 5rem); opacity: .5; }
+  .home a { color: inherit; text-decoration: none; }
+  .home a:hover { opacity: 1; text-decoration: underline; text-underline-offset: .2em; }
+</style>

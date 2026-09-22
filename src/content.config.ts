@@ -184,9 +184,21 @@ const footer = defineCollection({
 
 const passport = defineCollection({
   loader: glob({ base: './src/content/settings', pattern: 'passport.md' }),
-  schema: z.object({
-    title: z.string().default('Когнитивный паспорт'),
-  }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string().default('Когнитивный паспорт'),
+
+      // Главный кадр витрины — тот самый Texture Check: макросъёмка мёда,
+      // вощины, фактуры старого дерева. Поле необязательное: пока кадра нет,
+      // витрина обходится типографикой, а не заглушкой.
+      hero_image: image().optional(),
+      hero_alt: z.string().optional(),
+      hero_caption: z.string().optional(),
+    })
+    .refine((d) => !d.hero_image || !!d.hero_alt, {
+      message: 'У главного кадра обязательно текстовое описание hero_alt.',
+      path: ['hero_alt'],
+    }),
 });
 
 export const collections = { posts, series, pages, menu, footer, passport };

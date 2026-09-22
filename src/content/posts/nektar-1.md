@@ -5,6 +5,9 @@ description: "Остап впервые слышит слово «диверси
 series:
   - nektarakcii
   - ironichnaya-paseka
+lead_image: "../_attachments/swot-1.jpg"
+lead_alt: "Схема SWOT-анализа на доске, четыре квадранта"
+lead_caption: "SWOT-анализ пасеки — как его увидели трутни"
 date: 2026-08-06
 draft: true
 tags: ["финансы", "пчёлы"]

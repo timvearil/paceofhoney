@@ -5,6 +5,9 @@ description: "Жулио объясняет улью, почему продав�
 series:
   - nektarakcii
   - ironichnaya-paseka
+lead_image: "../_attachments/avtomatizaciya-ulev-lead-image.jpg"
+lead_alt: "Улей с датчиками автоматизации на пасеке"
+lead_caption: "Автоматизация ульев: техника приходит на пасеку"
 date: 2026-08-13
 draft: true
 tags: ["финансы", "пчёлы"]

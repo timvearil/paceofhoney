@@ -5,6 +5,9 @@ description: "Улей вкладывается в воздух. Воздух д
 series:
   - nektarakcii
   - ironichnaya-paseka
+lead_image: "../_attachments/chelovek-ili-klient.jpg"
+lead_alt: "Силуэт человека и силуэт клиента, разделённые линией"
+lead_caption: "Человек или клиент — развилка, которую проходит каждый"
 date: 2026-08-20
 draft: true
 tags: ["финансы", "пчёлы"]

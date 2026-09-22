@@ -1,158 +1,148 @@
 ---
 /**
- * Временная витрина компонентов. Настоящая главная — задача P6-01.
+ * Витрина проекта.
  *
- * Сейчас страница показывает всё, что собрано на этапе P4: шапку с уезжающим
- * меню, шторку, карточки серий, кадр с проявлением цвета, подвал. Плюс
- * типографику и палитру с прошлого этапа.
+ * Порядок экрана задан ТЗ 2.2: главный кадр с когнитивным паспортом,
+ * затем сериалы, затем свежие материалы, затем подвал с цоколем.
+ *
+ * Все блоки переживают пустоту: пока серий и статей нет, витрина остаётся
+ * осмысленной страницей, а не решетом из заглушек.
  */
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Footer from '../components/Footer.astro';
+import Frame from '../components/Frame.astro';
 import SeriesCard from '../components/SeriesCard.astro';
-import { getPublishedSeries, getEpisodes } from '../lib/content';
+import PostCard from '../components/PostCard.astro';
 import { getEntry, render } from 'astro:content';
+import { getPublishedSeries, getPublishedPosts, getSeriesCards } from '../lib/content';
 
 const passportEntry = await getEntry('passport', 'passport');
+const passport = passportEntry?.data;
 const Passport = passportEntry ? (await render(passportEntry)).Content : null;
 
 const series = await getPublishedSeries();
-const cards = await Promise.all(
-  series.map(async (s) => ({ data: s.data, episodes: (await getEpisodes(s.data.id)).length })),
-);
+// Карточка ведёт сразу в чтение, поэтому ей нужен адрес первой главы нити.
+const cards = await getSeriesCards();
 
-const tagline = 'Здесь время течёт со скоростью мёда.';
-const buildDate = new Date().toLocaleString('ru-RU', {
-  timeZone: 'Europe/Moscow',
-  day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-});
+// Свежее — строго по календарной дате от новых к старым (ТЗ 4.3.3).
+const posts = await getPublishedPosts();
+const latest = posts.slice(0, 6);
+
+// Подписи серий для ленты: там контекста нет, и читателю полезно видеть,
+// из какого сюжета материал.
+const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
 ---
 
-<BaseLayout title="Со скоростью мёда" description={tagline}>
+<BaseLayout
+  title="Со скоростью мёда"
+  description="Суверенный медиапроект о выходе из цифровой «Карусели»."
+  image={passport?.hero_image?.src}
+>
   <div class="container">
-    <section class="section">
-      <p class="mono muted">00 / витрина компонентов</p>
-      <h1>Со скоростью мёда<span class="dot">.</span></h1>
-      {Passport && <div class="text measure passport"><Passport /></div>}
-      <p class="mono muted hint">
-        Пролистай вниз — меню уедет вверх. Дёрни обратно — вернётся.
-        На узком экране вместо меню появится кнопка со шторкой.
-      </p>
-    </section>
+    <header class="hero">
+      <h1 class="mark">Со скоростью мёда<span class="dot">.</span></h1>
 
-    <section class="section">
-      <p class="mono muted">01 / карточки серий</p>
+      {Passport && (
+        <div class="passport text">
+          <Passport />
+        </div>
+      )}
+    </header>
+
+    {passport?.hero_image && (
+      <section class="section shot">
+        <Frame
+          src={passport.hero_image}
+          alt={passport.hero_alt ?? ''}
+          caption={passport.hero_caption}
+          ratio="16 / 9"
+          eager
+        />
+      </section>
+    )}
+
+    {/*
+      Свежее стоит выше сериалов намеренно.
+
+      Вернувшийся читатель приходит за новым — и если сначала встречает
+      витрину серий, ему нужно её пролистать, чтобы понять, появилось ли
+      что-нибудь с прошлого раза. Серии никуда не денутся: они ниже и
+      продублированы в меню, а новая статья живёт в ленте один раз.
+    */}
+    {latest.length > 0 && (
+      <section class="section section--lg" aria-labelledby="latest-head">
+        <p class="mono index">02 / свежее</p>
+        <h2 id="latest-head" class="sr-only">Свежие материалы</h2>
+
+        <div class="feed">
+          {latest.map((p) => (
+            <PostCard
+              post={p}
+              badges={p.data.series.map((id) => titleOf.get(id)).filter(Boolean) as string[]}
+            />
+          ))}
+        </div>
+
+        {posts.length > latest.length && (
+          <p class="more">
+            <a href="/series" class="link--right">Все сюжеты <span>→</span></a>
+          </p>
+        )}
+      </section>
+    )}
+
+    <section class="section section--lg" aria-labelledby="series-head">
+      <p class="mono index">03 / сериалы и сюжеты</p>
+      <h2 id="series-head" class="sr-only">Сериалы и сюжеты</h2>
+
       {cards.length > 0 ? (
-        <div class="cards">
+        <div class="grid">
           {cards.map((c) => (
             <SeriesCard
               id={c.data.id} title={c.data.title} description={c.data.description}
               icon={c.data.icon} cover={c.data.cover_image} coverAlt={c.data.cover_alt}
-              episodes={c.episodes}
+              episodes={c.episodes} readHref={c.readHref}
             />
           ))}
         </div>
       ) : (
-        <p class="muted">
-          Серий пока нет. Отладочная лежит с пометкой «черновик» и в этот список
-          не попадает — так и задумано.
-        </p>
+        <p class="empty">Первые сериалы готовятся к выходу.</p>
       )}
     </section>
-
-    <section class="section">
-      <p class="mono muted">02 / шкала заголовков</p>
-      <h2>Пчелиный фаервол</h2>
-      <h3>Глава восьмая: пузырь надувается</h3>
-      <h4>Что случилось на пасеке в четверг</h4>
-    </section>
-
-    <section class="section">
-      <p class="mono muted">03 / основной текст · Onest</p>
-      <div class="text measure">
-        <p>
-          Абзац набран тем шрифтом, которым будут набраны все главы: гротеск
-          Onest, переменного начертания, с полной кириллицей. Проверяем на
-          длинных словах вроде «достопримечательность» и на знаках препинания —
-          тире, кавычки-«ёлочки», многоточие…
-        </p>
-      </div>
-    </section>
-
-    <section class="section">
-      <p class="mono muted">04 / служебный шрифт · Geist Mono</p>
-      <p class="mono muted plate">📖 Сериал «НектарАкции» · Глава 8 из 10</p>
-      <p class="mono muted">20 августа 2026 · 1 234 знака · #пчёлы #финансы</p>
-    </section>
-
-    <section class="section">
-      <p class="mono muted">05 / акцентная антиква · Playfair Display</p>
-      <p class="display slogan">{tagline}</p>
-    </section>
-
-    <section class="section">
-      <p class="mono muted">06 / палитра и акцент</p>
-      <ul class="swatches mono">
-        <li><span class="chip chip--honey"></span>мёд #E8A33D · заливка</li>
-        <li><span class="chip chip--accent"></span>акцент · меняется с темой</li>
-      </ul>
-      <p class="accent-demo">
-        Так выглядит <a href="#main">акцентная ссылка</a> в текущей теме.
-        В светлой это тёмный мёд, в тёмной — янтарь во всю силу.
-      </p>
-    </section>
-
-    <section class="section">
-      <p class="mono muted">07 / проявление при прокрутке</p>
-      <p class="muted measure">
-        Эти блоки всплывают снизу, когда въезжают в кадр. Тем же механизмом
-        будут проявляться фотографии — им отведена средняя треть экрана.
-      </p>
-      <div class="risers">
-        {[1, 2, 3].map((n) => (
-          <div class="riser theme-border" data-fade-up><span class="mono">блок {n}</span></div>
-        ))}
-      </div>
-    </section>
-
-    <p class="mono muted stamp">каркас собран · {buildDate}</p>
   </div>
 
   <Footer slot="footer" />
 </BaseLayout>
 
 <style>
-  .muted { opacity: .5; }
-  .dot   { color: var(--accent); }
-  .measure { max-width: 34rem; }
-  .passport { margin-top: 1rem; }
-  .hint { margin-top: 1.5rem; max-width: 34rem; line-height: 1.5; }
+  .hero { padding-top: clamp(2rem, 8vw, 5rem); }
+  .mark { max-width: 14ch; }
+  .dot { color: var(--accent); }
 
-  .cards {
-    display: grid; gap: 2.5rem; margin-top: 1.5rem;
+  .passport {
+    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+    max-width: 38rem;
+    font-size: var(--fs-lg);
+    line-height: 1.6;
+  }
+  .passport :global(p:not(:last-child)) { margin-bottom: .75em; }
+
+  .shot { margin-top: clamp(2.5rem, 7vw, 4.5rem); }
+
+  .index { opacity: .45; margin-bottom: 1.5rem; }
+
+  .grid {
+    display: grid; gap: 2.5rem;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
   }
 
-  .plate { margin-bottom: .5rem; }
-  .slogan { margin-top: 1rem; }
+  .feed { border-bottom: 1px solid; border-color: color-mix(in srgb, currentColor 18%, transparent); }
 
-  .swatches { list-style: none; display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 1rem 0 0; padding: 0; }
-  .swatches li { display: flex; align-items: center; gap: .5rem; }
-  .chip { width: 1.75rem; height: 1.75rem; border-radius: var(--radius); border: 1px solid currentColor; }
-  .chip--honey  { background: var(--honey); }
-  .chip--accent { background: var(--accent); }
+  .empty { opacity: .5; max-width: 34rem; }
 
-  .accent-demo { max-width: 34rem; margin-top: 1.5rem; line-height: 1.6; }
-  .accent-demo a { color: var(--accent); text-underline-offset: .18em; }
-
-  .risers { display: grid; gap: 1rem; margin-top: 1.5rem; }
-  .riser {
-    display: grid; place-items: center; height: 8rem;
-    border: 1px solid; border-radius: var(--radius); opacity: 0;
-    transform: translateY(2rem);
-    transition: opacity 1s ease, transform 1s ease;
-  }
-  .riser.fade-up { opacity: 1; transform: translateY(0); }
-
-  .stamp { margin-top: clamp(3rem, 8vw, 5rem); }
+  .more { margin-top: 1.5rem; }
+  .more a { color: var(--accent); text-decoration: none; }
+  .more a span { display: inline-block; transition: padding-left var(--t-fast); }
+  .more a:hover span { padding-left: .5rem; }
 </style>

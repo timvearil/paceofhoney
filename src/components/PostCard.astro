@@ -1,0 +1,80 @@
+---
+/**
+ * Компактная карточка материала: в ленте «свежее» и в списке глав серии.
+ *
+ * Номер главы приходит снаружи, а не считается здесь: одна и та же статья
+ * носит разные номера в разных сериях, и карточка не может знать, через
+ * какую её сейчас смотрят.
+ */
+
+import type { Post } from '../lib/content';
+
+interface Props {
+  post: Post;
+  /** Номер главы в той серии, чей список сейчас показывается. */
+  number?: number;
+  /** Подписи серий — для ленты «свежее», где контекста нет. */
+  badges?: string[];
+  /**
+   * Адрес главы в той нити, из которой читатель переходит. Считает его
+   * вызывающий: карточка не знает, каким списком её сейчас показывают,
+   * а от этого зависит и номер главы, и что будет следующим.
+   */
+  href?: string;
+}
+
+const { post, number, badges = [], href } = Astro.props;
+const { title, description, slug, date, tags } = post.data;
+
+const to = href ?? `/posts/${slug}`;
+
+const when = date.toLocaleDateString('ru-RU', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<article class="card" data-fade-up>
+  <a class="link" href={to}>
+    <p class="meta mono">
+      {number !== undefined && <span class="num">{String(number).padStart(2, '0')}</span>}
+      <time datetime={date.toISOString().slice(0, 10)}>{when}</time>
+      {badges.map((b) => <span class="badge">{b}</span>)}
+    </p>
+
+    <h3 class="h4 title">{title}</h3>
+    <p class="lead">{description}</p>
+
+    {tags.length > 0 && (
+      <p class="tags mono">{tags.map((t) => <span>#{t}</span>)}</p>
+    )}
+  </a>
+</article>
+
+<style>
+  .card[data-fade-up] {
+    opacity: 0; transform: translateY(1.5rem);
+    transition: opacity .8s ease, transform .8s ease;
+  }
+  .card[data-fade-up].fade-up { opacity: 1; transform: translateY(0); }
+
+  .link {
+    display: block; color: inherit; text-decoration: none;
+    padding: 1.25rem 0;
+    border-top: 1px solid;
+    border-color: color-mix(in srgb, currentColor 18%, transparent);
+    transition: border-color var(--t-fast);
+  }
+  .link:hover { border-color: var(--accent); }
+
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; opacity: .5; }
+  .num { font-weight: 700; opacity: .8; }
+  .badge::before { content: '· '; }
+
+  .title { margin-top: .5rem; transition: color var(--t-fast); }
+  .link:hover .title { color: var(--accent); }
+
+  .lead { margin-top: .5rem; max-width: 46ch; line-height: 1.55; opacity: .75; font-size: var(--fs-sm); }
+  .tags { margin-top: .6rem; opacity: .4; display: flex; flex-wrap: wrap; gap: .75rem; }
+</style>

@@ -1,0 +1,53 @@
+---
+/**
+ * Своя страница «не найдено».
+ *
+ * GitHub Pages подхватывает файл с этим именем автоматически. Без него
+ * читатель по битой ссылке видит стандартную страницу GitHub — с чужим
+ * логотипом и на английском.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Footer from '../components/Footer.astro';
+import { getEntry } from 'astro:content';
+
+const menu = await getEntry('menu', 'menu');
+const items = (menu?.data.items ?? []).filter((i) => i.url !== '/');
+---
+
+<BaseLayout
+  title="Страница не найдена"
+  description="Такой страницы на сайте нет. Возможно, адрес изменился или в ссылке опечатка."
+>
+  <div class="container lost">
+    <p class="mono code">404</p>
+    <h1>Тут пусто</h1>
+
+    <div class="text measure">
+      <p>
+        Такой страницы нет. Либо в ссылке опечатка, либо адрес изменился —
+        со временем это случается даже там, где время течёт медленно.
+      </p>
+    </div>
+
+    <nav class="ways mono" aria-label="Куда пойти">
+      <a href="/">00: на главную</a>
+      {items.map((i) => <a href={i.url}>{i.title}</a>)}
+    </nav>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .lost {
+    min-height: 55vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: clamp(3rem, 10vw, 6rem) 0;
+  }
+  .code { opacity: .35; margin-bottom: .5rem; }
+  .measure { max-width: 32rem; margin-top: 1rem; }
+  .ways { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 2.5rem; }
+  .ways a { color: var(--accent); text-decoration: none; }
+  .ways a:hover { text-decoration: underline; text-underline-offset: .2em; }
+</style>

@@ -1,0 +1,41 @@
+---
+/**
+ * Страница главы, читаемой не ведущей нитью.
+ *
+ * Статья входит в несколько серий, и в каждой у неё свой номер главы и своя
+ * следующая. Первая глава «НектарАкций» — она же вторая глава «Ироничной
+ * пасеки», и дальше из неё ведут разные дороги.
+ *
+ * Адрес называет серию, поэтому нить известна на сборке — а значит плашка,
+ * блок «также входит в», полка, мост и бесшовный поток считают одно и то же
+ * из одного источника. Именно этого не хватало, когда нить передавалась
+ * пометкой `?s=`: её видел только браузер, и половина страницы врала.
+ *
+ * Ведущая нить сюда не попадает — у неё короткий адрес `/posts/{slug}`,
+ * он же канонический. Тексту один настоящий адрес, серий у него сколько
+ * угодно.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import EpisodeLayout from '../../../layouts/EpisodeLayout.astro';
+import { getPublishedSeries, getSideThreads, getThread } from '../../../lib/content';
+
+export const getStaticPaths = (async () => {
+  const threads = await getSideThreads();
+  return threads.map(({ post, seriesId }) => ({
+    params: { id: seriesId, slug: post.data.slug },
+    props: { post, seriesId },
+  }));
+}) satisfies GetStaticPaths;
+
+const { post, seriesId } = Astro.props;
+const { Content } = await render(post);
+
+const allSeries = await getPublishedSeries();
+const thread = (await getThread(post, seriesId, allSeries))!;
+---
+
+<EpisodeLayout post={post} thread={thread} allSeries={allSeries}>
+  <Content />
+</EpisodeLayout>

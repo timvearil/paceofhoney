@@ -1,0 +1,49 @@
+---
+/**
+ * Страница главы по каноническому адресу.
+ *
+ * Нить здесь — ведущая серия статьи, первая в списке `series`. Так приходят
+ * из поиска, из мессенджера и с ленты «свежее»: контекста у читателя нет,
+ * и мы показываем тот, который автор считает основным.
+ *
+ * Читатель, выбравший другую нить, идёт адресом `/series/{id}/{slug}` —
+ * страница та же, считает всё по своей серии.
+ *
+ * Здесь же развилка шаблонов из ТЗ 3.3: материал с сериями получает режим
+ * «Читалка», одиночный — классический шаблон. Признак — непустой `series`.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import EpisodeLayout from '../../layouts/EpisodeLayout.astro';
+import PageLayout from '../../layouts/PageLayout.astro';
+import { getPublishedSeries, getThread, leadSeriesId, assertContentIsSound } from '../../lib/content';
+
+export const getStaticPaths = (async () => {
+  await assertContentIsSound();
+
+  const posts = await getCollection('posts', (p) => import.meta.env.DEV || !p.data.draft);
+  return posts.map((post) => ({ params: { slug: post.data.slug }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const allSeries = await getPublishedSeries();
+const leadId = leadSeriesId(post);
+const thread = leadId ? await getThread(post, leadId, allSeries) : null;
+---
+
+{thread ? (
+  <EpisodeLayout post={post} thread={thread} allSeries={allSeries}>
+    <Content />
+  </EpisodeLayout>
+) : (
+  <PageLayout
+    title={post.data.title}
+    description={post.data.description}
+    updated={post.data.updated}
+  >
+    <Content />
+  </PageLayout>
+)}

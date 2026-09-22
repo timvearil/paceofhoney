@@ -1,0 +1,72 @@
+---
+/**
+ * «Эта глава также входит в…» — остальные серии статьи.
+ *
+ * Плашка наверху показывает только ведущую серию. Но статья может входить
+ * в три, и у каждой свой номер главы. Читателю честно показывается, что
+ * у текста несколько контекстов, и даётся переход в любой из них (ТЗ 3.1.А).
+ */
+
+import type { Post, Series, Thread } from '../lib/content';
+import { getThread } from '../lib/content';
+
+interface Props {
+  post: Post;
+  /** Нить, которой читатель уже идёт, — её не повторяем, она в плашке. */
+  exclude: string;
+  all: Series[];
+}
+
+const { post, exclude, all } = Astro.props;
+
+const others = await Promise.all(
+  post.data.series
+    .filter((id) => id !== exclude)
+    .map((id) => getThread(post, id, all)),
+);
+
+const list = others.filter(Boolean) as Thread[];
+---
+
+{list.length > 0 && (
+  <aside class="also" aria-label="Другие серии этой главы">
+    <p class="mono head">Эта глава также входит в</p>
+    <ul>
+      {list.map((t) => (
+        <li>
+          <a href={`/series/${t.series.data.id}`}>
+            <span class="icon" aria-hidden="true">{t.series.data.icon}</span>
+            <span class="name">«{t.series.data.title}»</span>
+            <span class="mono place">
+              {t.series.data.kind === 'serial' ? `глава ${t.number} из ${t.total}` : 'подборка'}
+            </span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </aside>
+)}
+
+<style>
+  .also { margin-top: clamp(2.5rem, 6vw, 4rem); }
+  .head { opacity: .45; margin-bottom: .75rem; }
+
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+
+  a {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+    color: inherit; text-decoration: none;
+    padding: .6rem 0;
+    border-top: 1px solid;
+    border-color: color-mix(in srgb, currentColor 18%, transparent);
+    transition: border-color var(--t-fast);
+  }
+  a:hover { border-color: var(--accent); }
+
+  .icon { font-size: .9em; }
+  .name { font-weight: var(--bold); }
+  .place { opacity: .45; }
+  .arrow { margin-left: auto; color: var(--accent); transition: padding-left var(--t-fast); }
+  a:hover .arrow { padding-left: .4rem; }
+</style>

@@ -1,0 +1,36 @@
+---
+/**
+ * Фрагмент главы для бесшовного потока — ведущая нить.
+ *
+ * Отдаёт только саму главу, без шапки и подвала. Скрипт читалки подтягивает
+ * этот кусок и вставляет под текущей главой.
+ *
+ * Близнец этого файла лежит в `/series/[id]/[slug]/partial.astro` и отдаёт
+ * ту же главу, посчитанную по другой нити. Разметка у обоих одна — она
+ * живёт в компоненте `Episode`.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import Episode from '../../../components/Episode.astro';
+import { getPublishedSeries, getThread, leadSeriesId } from '../../../lib/content';
+
+export const partial = true;
+
+export const getStaticPaths = (async () => {
+  const posts = await getCollection('posts', (p) => import.meta.env.DEV || !p.data.draft);
+  return posts
+    .filter((p) => p.data.series.length > 0)
+    .map((post) => ({ params: { slug: post.data.slug }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const allSeries = await getPublishedSeries();
+const thread = (await getThread(post, leadSeriesId(post)!, allSeries))!;
+---
+
+<Episode post={post} thread={thread} allSeries={allSeries}>
+  <Content />
+</Episode>

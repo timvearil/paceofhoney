@@ -1,0 +1,82 @@
+---
+/**
+ * Шаблон главы сериала — режим «Читалка».
+ *
+ * Отличия от статических страниц (ТЗ 3.3.1):
+ *   · вторая строка шапки — плашка «Глава N из M», она не уезжает с меню;
+ *   · сквозного подвала и цоколя нет вовсе — они разрывали бы поток чтения;
+ *   · внизу «Полка с журналами» и переход к следующей главе.
+ *
+ * Шаблон принимает **нить** — серию, которой читатель идёт. Все элементы
+ * страницы считают своё от неё одной: плашка, блок «также входит в», полка,
+ * мост в следующий сериал и адреса для бесшовного потока. Догадок нет
+ * нигде, поэтому и расходиться нечему.
+ *
+ * Разметка устроена так, чтобы страница была полноценной **без единой строчки
+ * скрипта**: глава открывается, читается, внизу есть ссылка на следующую.
+ * Бесшовный поток — надстройка сверху, а не условие работоспособности.
+ */
+
+import BaseLayout from './BaseLayout.astro';
+import SeriesPlate from '../components/SeriesPlate.astro';
+import Episode from '../components/Episode.astro';
+import Shelf from '../components/Shelf.astro';
+import type { Post, Series, Thread } from '../lib/content';
+import { canonicalHref, chapterHref } from '../lib/content';
+
+interface Props {
+  post: Post;
+  thread: Thread;
+  allSeries: Series[];
+}
+
+const { post, thread, allSeries } = Astro.props;
+const d = post.data;
+const series = thread.series;
+
+// Ссылка «начать с 1-й главы» нужна только тем, кто попал в середину нити.
+const firstHref =
+  thread.number > 1 && thread.first ? chapterHref(thread.first, series.data.id) : undefined;
+---
+
+<BaseLayout
+  title={d.title}
+  description={d.description}
+  image={d.lead_image?.src}
+  type="article"
+  publishedAt={d.date}
+  updatedAt={d.updated}
+  canonicalPath={canonicalHref(post)}
+>
+  <SeriesPlate
+    slot="plate"
+    series={series}
+    number={thread.number}
+    total={thread.total}
+    firstHref={firstHref}
+  />
+
+  <div class="container">
+    {/* Поток глав. Скрипт читалки дописывает сюда следующие статьи. */}
+    <div id="stream">
+      <Episode post={post} thread={thread} allSeries={allSeries} top>
+        <slot />
+      </Episode>
+    </div>
+
+    {/* Куда идти дальше. Работает и без скрипта: обычная ссылка. */}
+    <Shelf next={thread.next} thread={series} allSeries={allSeries} />
+  </div>
+</BaseLayout>
+
+<style>
+  /* Между главами в потоке нужен воздух и видимая граница: иначе читатель
+     не поймёт, что начался новый текст. Правило про соседство живёт здесь,
+     а не в самой главе: глава про своих соседей ничего не знает. */
+  #stream :global(.episode + .episode) {
+    margin-top: clamp(4rem, 10vw, 7rem);
+    padding-top: clamp(3rem, 8vw, 5rem);
+    border-top: 1px solid;
+    border-color: color-mix(in srgb, currentColor 18%, transparent);
+  }
+</style>

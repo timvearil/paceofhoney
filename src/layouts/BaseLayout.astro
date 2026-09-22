@@ -13,6 +13,10 @@ import Header from '../components/Header.astro';
 import '@fontsource-variable/onest';
 import '@fontsource-variable/geist-mono';
 import '@fontsource-variable/playfair-display';
+// Курсив Playfair подключается отдельно: в основной набор он не входит.
+// Нужен потому, что у Onest курсива нет вовсе — браузер наклонял бы буквы
+// искусственно. Выделения в тексте отдаём антикве, см. tokens.css.
+import '@fontsource-variable/playfair-display/wght-italic.css';
 import '../styles/tokens.css';
 
 interface Props {
@@ -22,10 +26,20 @@ interface Props {
   type?: 'website' | 'article';
   publishedAt?: Date;
   updatedAt?: Date;
+  /** Настоящий адрес страницы, если открыли её другим. */
+  canonicalPath?: string;
 }
+
+/*
+ * Высоту шапки точно измерит chrome.js, но до его запуска страница уже
+ * отрисована — и если начальное значение не угадано, содержимое прыгнет.
+ * Сервер знает, будет ли вторая строка с плашкой серии, поэтому начальное
+ * приближение задаём здесь: скачок вёрстки сводится к нулю.
+ */
+const chromeHeight = Astro.slots.has('plate') ? '7.25rem' : '4.5rem';
 ---
 
-<html lang="ru">
+<html lang="ru" style={`--chrome-height:${chromeHeight}`}>
   <head>
     <BaseHead {...Astro.props} />
   </head>
@@ -46,10 +60,12 @@ interface Props {
     <script>
       import { startChrome, startDrawer } from '../scripts/chrome.js';
       import { startReveal } from '../scripts/reveal.js';
+      import { startReader } from '../scripts/reader.js';
 
       startChrome();
       startDrawer();
       startReveal();
+      startReader();   // сам ничего не делает, если на странице нет потока глав
 
       document.getElementById('themeToggle')?.addEventListener('click', () => {
         const dark = document.documentElement.classList.toggle('dark');
@@ -58,9 +74,13 @@ interface Props {
     </script>
 
     <style is:global>
-      /* Отступ под фиксированной шапкой. Плашка серии на страницах эпизодов
-         добавляет к нему свою высоту переменной --plate-height. */
-      body { padding-top: calc(4.5rem + var(--plate-height, 0px)); }
+      /*
+        Отступ под фиксированной шапкой. Точную высоту измеряет chrome.js и
+        уточняет в --chrome-height: плашка серии бывает и в две строки при
+        длинном названии сериала. Начальное приближение проставлено сервером
+        на <html> — иначе содержимое прыгало бы в момент запуска скрипта.
+      */
+      body { padding-top: var(--chrome-height, 4.5rem); }
     </style>
   </body>
 </html>
