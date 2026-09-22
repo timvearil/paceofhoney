@@ -110,6 +110,17 @@ const series = defineCollection({
       icon: z.string().min(1),
       cover_image: image().optional(),
       cover_alt: z.string().optional(),
+
+      // Куда смотреть при обрезке обложки.
+      //
+      // Обложка показывается в двух разных пропорциях: карточкой 4:3 на
+      // витрине и широкой полосой 21:9 в шапке серии. Почти любой кадр,
+      // снятый не под полосу, теряет в ней верх — у портретного снимка
+      // срезается макушка. Поле сдвигает точку кадрирования.
+      //
+      // Значение — как в CSS object-position: «center», «top»,
+      // «center 25%», «left bottom».
+      cover_position: z.string().default('center'),
       order: z.number().int().nonnegative(),
       draft: z.boolean().default(false),
 

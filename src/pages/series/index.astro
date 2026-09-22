@@ -43,6 +43,7 @@ const collections = cards.filter((c) => c.data.kind === 'collection');
             <SeriesCard
               id={c.data.id} title={c.data.title} description={c.data.description}
               icon={c.data.icon} cover={c.data.cover_image} coverAlt={c.data.cover_alt}
+              coverPosition={c.data.cover_position}
               episodes={c.episodes} readHref={c.readHref}
             />
           ))}
@@ -58,6 +59,7 @@ const collections = cards.filter((c) => c.data.kind === 'collection');
             <SeriesCard
               id={c.data.id} title={c.data.title} description={c.data.description}
               icon={c.data.icon} cover={c.data.cover_image} coverAlt={c.data.cover_alt}
+              coverPosition={c.data.cover_position}
               episodes={c.episodes} readHref={c.readHref}
             />
           ))}

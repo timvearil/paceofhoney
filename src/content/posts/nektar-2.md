@@ -3,7 +3,7 @@ title: "НектарАкции-2: Первичное размещение"
 slug: "nektar-2"
 description: "Жулио объясняет улью, почему продавать будущий мёд выгоднее, чем нынешний."
 series:
-  - nektarakcii
+  - nektar-akcii
   - ironichnaya-paseka
 lead_image: "../_attachments/avtomatizaciya-ulev-lead-image.jpg"
 lead_alt: "Улей с датчиками автоматизации на пасеке"

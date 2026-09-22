@@ -102,6 +102,7 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
             <SeriesCard
               id={c.data.id} title={c.data.title} description={c.data.description}
               icon={c.data.icon} cover={c.data.cover_image} coverAlt={c.data.cover_alt}
+              coverPosition={c.data.cover_position}
               episodes={c.episodes} readHref={c.readHref}
             />
           ))}

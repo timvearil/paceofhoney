@@ -3,7 +3,7 @@ title: "НектарАкции-3: Пузырь надувается"
 slug: "nektar-3"
 description: "Улей вкладывается в воздух. Воздух дорожает."
 series:
-  - nektarakcii
+  - nektar-akcii
   - ironichnaya-paseka
 lead_image: "../_attachments/chelovek-ili-klient.jpg"
 lead_alt: "Силуэт человека и силуэт клиента, разделённые линией"

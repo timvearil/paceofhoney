@@ -66,10 +66,10 @@ const portrait = !ratio && src.height > src.width;
 <style>
   .frame { margin: 0; }
 
+  /* Только геометрия. Проявление цвета и тёплый свет — общие правила
+     [data-focus-frame] в tokens.css, чтобы не расходились по копиям. */
   .shot {
-    position: relative;
     overflow: hidden;
-    isolation: isolate;
     border-radius: var(--radius);
   }
 
@@ -78,17 +78,11 @@ const portrait = !ratio && src.height > src.width;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: grayscale(100%);
-    opacity: .85;
-    transition: filter var(--t-color) ease, opacity var(--t-color) ease;
   }
 
   /*
     Узкая колонка для портрета. Не обрезка, а другая ширина: кадр остаётся
     целым, а текст под ним начинается на том же экране, а не за его краем.
-
-    Правило стоит после общего намеренно — у них одинаковая специфичность,
-    и решает порядок.
   */
   .shot--portrait { width: min(100%, 26rem); margin-inline: auto; }
   .shot--portrait :global(img) {
@@ -96,32 +90,6 @@ const portrait = !ratio && src.height > src.width;
     /* Страховка на случай очень длинного кадра — скриншота, например. */
     max-height: min(80vh, 34rem);
     object-fit: contain;
-  }
-
-  /*
-    Тёплый вольфрамовый свет отдельным слоем. Анимируется только opacity —
-    браузер делает это на видеокарте, не перерисовывая кадр.
-  */
-  .shot::after {
-    content: '';
-    position: absolute; inset: 0;
-    pointer-events: none;
-    background: radial-gradient(120% 90% at 50% 40%,
-                rgba(232, 163, 61, .18), transparent 70%);
-    mix-blend-mode: soft-light;
-    opacity: 0;
-    transition: opacity var(--t-color) ease;
-  }
-
-  .shot.in-focus :global(img) { filter: grayscale(0%); opacity: 1; }
-  .shot.in-focus::after { opacity: 1; }
-
-  /* Там, где есть мышь, фокусом считается наведение. */
-  @media (hover: hover) and (pointer: fine) {
-    .shot:hover :global(img) { filter: grayscale(0%); opacity: 1; transform: scale(1.02); }
-    .shot:hover::after { opacity: 1; }
-    .shot :global(img) { transition: filter var(--t-color) ease, opacity var(--t-color) ease,
-                                     transform var(--t-color) ease; }
   }
 
   figcaption { margin-top: .6rem; opacity: .5; }

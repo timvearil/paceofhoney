@@ -186,6 +186,19 @@ const restorer = byMargin('150% 0px');
 const sentinel = [...watchdog.targets][0];
 const wait = () => new Promise((r) => setTimeout(r, 40));
 
+/*
+ * Вести о приходе и уходе глав.
+ *
+ * По ним проявление цвета берёт кадры подгруженной главы под наблюдение и
+ * снимает его, когда глава уходит из памяти. Пропавшая весть выглядит для
+ * читателя так: фотографии в подгруженных главах не оживают. Проверить это
+ * глазами трудно — эффект тонкий, и Тимур заметил его только на четвёртый
+ * день. Поэтому проверяем здесь.
+ */
+const told = { added: 0, removed: 0 };
+window.document.addEventListener('honey:content-added', () => told.added++);
+window.document.addEventListener('honey:content-removed', () => told.removed++);
+
 let bad = 0;
 const check = (name, actual, expected) => {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
@@ -250,6 +263,10 @@ await wait();
 await wait();
 check('глава осталась на месте', slugs().includes(entrySlug), true);
 check('распорка не появилась снова', spacers(), []);
+
+console.log('\n-- вести для проявления цвета --');
+check('о каждой пришедшей главе сообщено', told.added >= 2, true);
+check('об уходе свёрнутой главы тоже', told.removed >= 1, true);
 
 console.log('\n-- история браузера --');
 check('ни одной новой записи (replaceState, не pushState)', window.history.length, 1);

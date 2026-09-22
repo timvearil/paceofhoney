@@ -214,7 +214,25 @@ export async function assertContentIsSound(): Promise<void> {
     }
   }
 
-  // 3. Сериал, у которого нет ни одной главы, — скорее всего опечатка в id.
+  // 3. Идентификатор серии не повторяется.
+  //
+  // Имя файла тут ни при чём: серию опознаёт поле `id`, и два разных файла
+  // могут объявить одно и то же. Тогда маршрут `/series/{id}` соберётся
+  // дважды, одна страница молча затрёт другую, а главы обеих серий
+  // перемешаются в одну нить — причём порядок будет зависеть от того,
+  // в каком порядке файлы прочитались с диска.
+  const takenIds = new Map<string, string>();
+  for (const s of series) {
+    const previous = takenIds.get(s.data.id);
+    if (previous) {
+      problems.push(
+        `Идентификатор серии «${s.data.id}» занят дважды: ${previous} и ${s.id}`,
+      );
+    }
+    takenIds.set(s.data.id, s.id);
+  }
+
+  // 4. Сериал, у которого нет ни одной главы, — скорее всего опечатка в id.
   for (const s of series) {
     if (s.data.draft) continue;
     const count = posts.filter((p) => !p.data.draft && p.data.series.includes(s.data.id)).length;
@@ -226,7 +244,7 @@ export async function assertContentIsSound(): Promise<void> {
     }
   }
 
-  // 4. Порядок глав должен быть определён однозначно.
+  // 5. Порядок глав должен быть определён однозначно.
   //
   // Если две статьи одной серии стоят на одну дату и ни у одной не задан
   // `order`, порядок решится алфавитом слага — то есть случайно. Для серии

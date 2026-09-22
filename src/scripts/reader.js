@@ -231,6 +231,12 @@ export function startReader() {
 
     focus.unobserve(el);
     nearby.unobserve(el);
+
+    // Проявление цвета следит за кадрами внутри главы через свои наблюдатели.
+    // Без этой вести они держали бы ссылки на выброшенные элементы: к концу
+    // длинной серии — десятки мёртвых кадров в памяти.
+    document.dispatchEvent(new CustomEvent('honey:content-removed', { detail: { el } }));
+
     el.replaceWith(spacer);
     restorer.observe(spacer);
   }

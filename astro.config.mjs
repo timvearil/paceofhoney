@@ -3,6 +3,8 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import { unified } from '@astrojs/markdown-remark';
 import { remarkObsidian } from './src/plugins/remark-obsidian.mjs';
+import { rehypeFigures } from './src/plugins/rehype-figures.mjs';
+import images from './src/integrations/images.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
 const SITE = 'https://paceofhoney.me';
@@ -24,6 +26,9 @@ export default defineConfig({
   },
 
   integrations: [
+    // Следит за архивом иллюстраций, пока идёт работа: новый кадр появляется
+    // на странице сам, без перезапуска сервера.
+    images(),
     sitemap({
       // Черновики и служебные адреса в карту сайта не попадают.
       filter: (page) => !page.includes('/_'),
@@ -50,6 +55,11 @@ export default defineConfig({
     // десятка страниц занимает полторы секунды, экономить тут нечего.
     processor: unified({
       remarkPlugins: [[remarkObsidian, { root: process.cwd() }]],
+      // Иллюстрации внутри текста доводятся до вида ведущего кадра: подпись,
+      // проявление цвета, размер под ширину колонки. Именно rehype, а не
+      // remark: к этому моменту Astro уже посчитал srcset, и мы ничего
+      // не ломаем в его оптимизации.
+      rehypePlugins: [rehypeFigures],
     }),
     // Подсветку кода настроим, когда появятся технические статьи.
     shikiConfig: { theme: 'github-dark', wrap: true },

@@ -3,7 +3,7 @@ title: "НектарАкции-1: Трутень с портфелем"
 slug: "nektar-1"
 description: "Остап впервые слышит слово «диверсификация» и решает, что это про сорта мёда."
 series:
-  - nektarakcii
+  - nektar-akcii
   - ironichnaya-paseka
 lead_image: "../_attachments/swot-1.jpg"
 lead_alt: "Схема SWOT-анализа на доске, четыре квадранта"

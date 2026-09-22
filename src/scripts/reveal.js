@@ -13,6 +13,12 @@
  * У кадров своя зона срабатывания — средняя треть экрана (ТЗ 2.5.2).
  * Остальное проявляется, едва показавшись снизу.
  *
+ * ОДНИ И ТЕ ЖЕ НАБЛЮДАТЕЛИ НА ВСЁ. Главы, подъехавшие в поток читалки,
+ * приходят после запуска и берутся под тот же надзор, что и отрисованные
+ * сервером. Раньше им класс `.in-focus` просто проставлялся разом: кадры
+ * выходили цветными навсегда, и проявление работало ровно на одной главе —
+ * той, с которой читатель начал. Нашёл Тимур: «работает только там».
+ *
  * Спецификация: 01_Spec/tz-paceofhoney-v2.md, раздел 2.5.4
  */
 
@@ -22,54 +28,45 @@ const ONCE = [
   ['[data-bookend-slide]', 'bookend-slide-up'],
 ];
 
+const FRAMES = '[data-focus-frame]';
+
+/** Что показать элементу, когда он въедет в кадр. */
+const promised = new WeakMap();
+
+let onceWatcher = null;
+let focusWatcher = null;
+let nearbyWatcher = null;
+
 /**
  * Запасной путь, если браузер не умеет следить за попаданием в кадр:
  * показываем всё сразу, ничего не пряча.
  */
-function showEverythingAtOnce() {
+function showEverythingAtOnce(root = document) {
   for (const [selector, className] of ONCE) {
-    document.querySelectorAll(selector).forEach((el) => el.classList.add(className));
+    root.querySelectorAll(selector).forEach((el) => el.classList.add(className));
   }
-  document.querySelectorAll('[data-focus-frame]').forEach((el) => el.classList.add('in-focus'));
+  root.querySelectorAll(FRAMES).forEach((el) => el.classList.add('in-focus'));
 }
 
-/* Появление один раз: показали — перестали следить. */
-function watchOnce() {
-  const seen = new WeakMap();
-
-  const observer = new IntersectionObserver(
+function createWatchers() {
+  /* Появление один раз: показали — перестали следить. */
+  onceWatcher = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        const className = seen.get(entry.target);
+        const className = promised.get(entry.target);
         if (className) entry.target.classList.add(className);
-        observer.unobserve(entry.target);
+        onceWatcher.unobserve(entry.target);
       }
     },
     { rootMargin: '0px 0px -10% 0px', threshold: 0 },
   );
 
-  for (const [selector, className] of ONCE) {
-    document.querySelectorAll(selector).forEach((el) => {
-      seen.set(el, className);
-      observer.observe(el);
-    });
-  }
-}
-
-/*
- * Проявление цвета. В отличие от остального — обратимо: кадр уходит из
- * центра экрана и снова гаснет. Поэтому наблюдение не снимается.
- *
- * will-change ставится и снимается здесь же. Постоянный will-change на всех
- * фотографиях страницы исчерпывает видеопамять и даёт обратный эффект —
- * подсказка браузеру превращается в тормоз.
- */
-function watchFrames() {
-  const frames = document.querySelectorAll('[data-focus-frame]');
-  if (!frames.length) return;
-
-  const focus = new IntersectionObserver(
+  /*
+   * Проявление цвета. В отличие от остального — обратимо: кадр уходит из
+   * центра экрана и снова гаснет. Поэтому наблюдение не снимается.
+   */
+  focusWatcher = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
         entry.target.classList.toggle('in-focus', entry.isIntersecting);
@@ -78,7 +75,12 @@ function watchFrames() {
     { rootMargin: '-35% 0px -35% 0px', threshold: 0 },
   );
 
-  const nearby = new IntersectionObserver(
+  /*
+   * will-change ставится и снимается здесь же. Постоянный will-change на всех
+   * фотографиях страницы исчерпывает видеопамять и даёт обратный эффект —
+   * подсказка браузеру превращается в тормоз.
+   */
+  nearbyWatcher = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
         const img = entry.target.querySelector('img');
@@ -87,41 +89,60 @@ function watchFrames() {
     },
     { rootMargin: '100% 0px 100% 0px', threshold: 0 },
   );
+}
 
-  frames.forEach((el) => {
-    focus.observe(el);
-    nearby.observe(el);
+/** Взять под надзор всё, что объявлено внутри узла. */
+function watchWithin(root) {
+  if (!onceWatcher) {
+    showEverythingAtOnce(root);
+    return;
+  }
+
+  for (const [selector, className] of ONCE) {
+    root.querySelectorAll(selector).forEach((el) => {
+      promised.set(el, className);
+      onceWatcher.observe(el);
+    });
+  }
+
+  root.querySelectorAll(FRAMES).forEach((el) => {
+    focusWatcher.observe(el);
+    nearbyWatcher.observe(el);
   });
 }
 
-/**
- * Главы, подъехавшие в поток читалки, приходят уже после запуска наблюдателей.
- * Читалка сообщает о них событием, и мы берём новые элементы под надзор —
- * иначе кадры внутри подгруженной главы остались бы серыми навсегда.
- */
-function watchAddedContent() {
-  document.addEventListener('honey:content-added', (e) => {
-    const root = e.detail?.el;
-    if (!root) return;
+/** Снять надзор с главы, которую читалка свернула, уводя её из памяти. */
+function unwatchWithin(root) {
+  if (!onceWatcher) return;
 
-    for (const [selector, className] of ONCE) {
-      root.querySelectorAll(selector).forEach((el) => el.classList.add(className));
-    }
-    root.querySelectorAll('[data-focus-frame]').forEach((el) => el.classList.add('in-focus'));
+  for (const [selector] of ONCE) {
+    root.querySelectorAll(selector).forEach((el) => onceWatcher.unobserve(el));
+  }
+  root.querySelectorAll(FRAMES).forEach((el) => {
+    focusWatcher.unobserve(el);
+    nearbyWatcher.unobserve(el);
   });
 }
 
 export function startReveal() {
-  watchAddedContent();
+  // Главы приходят и уходят по ходу чтения — слушаем обе вести.
+  // Подписываемся до первого обхода: читалка могла успеть раньше.
+  document.addEventListener('honey:content-added', (e) => {
+    if (e.detail?.el) watchWithin(e.detail.el);
+  });
+  document.addEventListener('honey:content-removed', (e) => {
+    if (e.detail?.el) unwatchWithin(e.detail.el);
+  });
 
   if (!('IntersectionObserver' in window)) {
     showEverythingAtOnce();
     return;
   }
+
   // Просьбу «поменьше движения» отрабатывает CSS: он оставляет плавное
   // проявление и мгновенно переключает всё, что двигает элемент. Наблюдатель
   // при этом работает как обычно — иначе у таких читателей страница
   // проявлялась бы вся разом, включая то, до чего они не долистали.
-  watchOnce();
-  watchFrames();
+  createWatchers();
+  watchWithin(document);
 }
