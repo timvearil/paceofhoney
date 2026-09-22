@@ -2,8 +2,9 @@
 title: "НектарАкции-1: Трутень с портфелем"
 slug: "nektar-1"
 description: "Остап впервые слышит слово «диверсификация» и решает, что это про сорта мёда."
-series_id: "nektarakcii"
-episode_number: 1
+series:
+  - nektarakcii
+  - ironichnaya-paseka
 date: 2026-08-06
 draft: true
 tags: ["финансы", "пчёлы"]

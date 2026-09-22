@@ -2,8 +2,9 @@
 title: "НектарАкции-2: Первичное размещение"
 slug: "nektar-2"
 description: "Жулио объясняет улью, почему продавать будущий мёд выгоднее, чем нынешний."
-series_id: "nektarakcii"
-episode_number: 2
+series:
+  - nektarakcii
+  - ironichnaya-paseka
 date: 2026-08-13
 draft: true
 tags: ["финансы", "пчёлы"]

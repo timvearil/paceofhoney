@@ -7,8 +7,10 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "images": "node scripts/sync-images.mjs",
+    "bookend": "node scripts/make-bookend.mjs",
+    "dev": "npm run images && astro dev",
+    "build": "npm run images && astro build",
     "preview": "astro preview",
     "check": "astro check"
   },

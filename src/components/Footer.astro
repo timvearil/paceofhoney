@@ -93,7 +93,18 @@ const Content = entry ? (await render(entry)).Content : null;
 
   /* Цоколь: растёт снизу, как поднимающийся навстречу горизонт. */
   .bookend { display: block; line-height: 0; }
-  .bookend :global(img) { width: 100%; height: auto; }
+  .bookend :global(img) {
+    width: 100%;
+    height: auto;
+    /* Верхняя кромка растворяется в странице, нижняя остаётся плотной:
+       цоколь не выглядит наклеенной картинкой с резким краем.
+
+       Растворение короткое — верхняя пятая часть. Длиннее нельзя: скамейка
+       начинается на 21% высоты полосы и при широком градиенте стала бы
+       полупрозрачной. Для мягкого стыка двадцати процентов достаточно. */
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 20%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 20%);
+  }
   .bookend :global([data-bookend-slide]) {
     opacity: 0;
     transform: scaleY(.8);

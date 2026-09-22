@@ -2,8 +2,9 @@
 title: "НектарАкции-3: Пузырь надувается"
 slug: "nektar-3"
 description: "Улей вкладывается в воздух. Воздух дорожает."
-series_id: "nektarakcii"
-episode_number: 3
+series:
+  - nektarakcii
+  - ironichnaya-paseka
 date: 2026-08-20
 draft: true
 tags: ["финансы", "пчёлы"]

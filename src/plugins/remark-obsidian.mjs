@@ -72,9 +72,27 @@ function readRegistry(root) {
   return registry;
 }
 
-export function remarkObsidian({ root = process.cwd(), attachments = './_attachments' } = {}) {
+/**
+ * Карта «исходное имя картинки → файл в репозитории». Её готовит
+ * scripts/sync-images.mjs: имена переводятся в латиницу, иначе адрес
+ * превращается в длинную строку процентов.
+ */
+let imageMap = null;
+
+function readImageMap(root) {
+  if (imageMap) return imageMap;
+  try {
+    imageMap = JSON.parse(fs.readFileSync(path.join(root, 'src/content/_attachments-map.json'), 'utf8'));
+  } catch {
+    imageMap = {};
+  }
+  return imageMap;
+}
+
+export function remarkObsidian({ root = process.cwd(), attachments = '../_attachments' } = {}) {
   return function transformer(tree, file) {
     const links = readRegistry(root);
+    const images = readImageMap(root);
     const source = file?.history?.[0] ?? file?.path ?? 'неизвестный файл';
     const broken = [];
 
@@ -99,9 +117,11 @@ export function remarkObsidian({ root = process.cwd(), attachments = './_attachm
         // Вложение: отдаём Astro обычной разметкой, дальше он сам оптимизирует.
         if (bang === '!') {
           if (IMAGE_EXT.test(name)) {
+            // Имя из текста — исходное, русское. Реальный файл в репозитории
+            // назван латиницей: карту готовит scripts/sync-images.mjs.
             out.push({
               type: 'image',
-              url: `${attachments}/${name}`,
+              url: `${attachments}/${images[name] ?? name}`,
               alt: alias?.trim() ?? '',
               title: null,
             });
