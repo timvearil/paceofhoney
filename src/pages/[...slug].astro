@@ -14,6 +14,7 @@
 import type { GetStaticPaths } from 'astro';
 import { getCollection, render } from 'astro:content';
 import PageLayout from '../layouts/PageLayout.astro';
+import Frame from '../components/Frame.astro';
 import { assertContentIsSound } from '../lib/content';
 
 export const getStaticPaths = (async () => {
@@ -32,6 +33,27 @@ const { page } = Astro.props;
 const { Content } = await render(page);
 ---
 
-<PageLayout title={page.data.title} description={page.data.description} updated={page.data.updated}>
+<PageLayout
+  title={page.data.title}
+  description={page.data.description}
+  updated={page.data.updated}
+  image={page.data.lead_image?.src}
+>
+  {page.data.lead_image && (
+    <div class="lead">
+      <Frame
+        src={page.data.lead_image}
+        alt={page.data.lead_alt ?? ''}
+        caption={page.data.lead_caption}
+        eager
+      />
+    </div>
+  )}
   <Content />
 </PageLayout>
+
+<style>
+  /* Тот же отступ, что у ведущего кадра главы: страница не должна
+     отличаться от неё по ритму. */
+  .lead { margin-bottom: 2.5rem; }
+</style>

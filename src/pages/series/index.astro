@@ -19,21 +19,21 @@ const collections = cards.filter((c) => c.data.kind === 'collection');
 ---
 
 <BaseLayout
-  title="Серии и сюжеты"
-  description="Полный каталог подборок проекта: сквозные сериалы и тематические собрания."
+  title="Журналы"
+  description="Все журналы проекта: сквозные сюжеты, которые читаются подряд, и тематические — без общей линии."
 >
   <div class="container catalogue">
     <header class="head">
-      <p class="mono index">02 / серии</p>
-      <h1>Серии и сюжеты</h1>
+      <p class="mono index">02 / журналы</p>
+      <h1>Журналы на столике</h1>
       <p class="lead text">
-        Каждый сюжет читается подряд, как книга. Статья может входить сразу
-        в несколько серий — у неё просто будет свой номер главы в каждой.
+        Каждый журнал читается подряд, как книга. Одна статья может входить
+        сразу в несколько журналов — и в каждом у неё свой номер.
       </p>
     </header>
 
     {cards.length === 0 && (
-      <p class="empty">Первые сериалы готовятся к выходу.</p>
+      <p class="empty">Первые журналы готовятся к выходу.</p>
     )}
 
     {serials.length > 0 && (
@@ -53,7 +53,7 @@ const collections = cards.filter((c) => c.data.kind === 'collection');
 
     {collections.length > 0 && (
       <section class="section section--lg">
-        <p class="mono index">подборки</p>
+        <p class="mono index">без сквозного сюжета</p>
         <div class="grid">
           {collections.map((c) => (
             <SeriesCard
@@ -73,9 +73,9 @@ const collections = cards.filter((c) => c.data.kind === 'collection');
 
 <style>
   .catalogue { padding-top: clamp(2rem, 6vw, 4rem); }
-  .index { opacity: .45; margin-bottom: 1rem; }
+  .index { opacity: var(--dim); margin-bottom: 1rem; }
   .lead { margin-top: 1.25rem; max-width: 38rem; line-height: 1.6; opacity: .75; }
-  .empty { margin-top: 2rem; opacity: .5; }
+  .empty { margin-top: 2rem; opacity: var(--dim); }
   .grid {
     display: grid; gap: 2.5rem;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));

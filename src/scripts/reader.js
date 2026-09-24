@@ -49,6 +49,10 @@ export function startReader() {
 
   const shelf = document.querySelector('[data-shelf]');
   const plateCount = document.querySelector('[data-plate-count]');
+  const steps = {
+    prev: document.querySelector('[data-step="prev"]'),
+    next: document.querySelector('[data-step="next"]'),
+  };
   const canonical = document.querySelector('link[rel="canonical"]');
 
   const episodes = () => [...stream.querySelectorAll('[data-episode]')];
@@ -168,10 +172,71 @@ export function startReader() {
       canonical.href = new URL(d.canonical, location.origin).href;
     }
     if (plateCount) plateCount.textContent = `Глава ${d.number} из ${d.total}`;
+    aimSteps(d);
 
     // Читатель сместился — пересчитываем, что держать в памяти.
     trim();
   }
+
+  /* --------------------------------------------------------------------
+     Стрелки «назад» и «вперёд» в плашке
+
+     Сервер рисует их для той главы, с которой открылась страница. Но в потоке
+     под глазами у читателя оказывается уже третья или пятая — и стрелки обязаны
+     переехать вместе с ним, иначе «вперёд» отправит туда, где он давно был.
+     Куда вести, знает сама глава: адреса соседей посчитаны на сборке.
+     ----------------------------------------------------------------- */
+
+  /** Переставляет стрелки на соседей главы `d`. Конец нити — стрелка гаснет. */
+  function aimSteps(d) {
+    for (const [side, el] of Object.entries(steps)) {
+      if (!el) continue;
+      const href = d[`${side}Href`] || '';
+      const slug = d[`${side}Slug`] || '';
+
+      if (href) {
+        el.href = href;
+        el.removeAttribute('aria-disabled');
+      } else {
+        el.removeAttribute('href');
+        el.setAttribute('aria-disabled', 'true');
+      }
+      el.dataset.target = slug;
+    }
+  }
+
+  /** Глава или её распорка, если она уже есть на странице. */
+  function findLoaded(slug) {
+    if (!slug) return null;
+    return (
+      stream.querySelector(`[data-episode][data-slug="${slug}"]`) ||
+      stream.querySelector(`[data-spacer="${slug}"]`)
+    );
+  }
+
+  /*
+   * Клик по стрелке.
+   *
+   * Если сосед уже в ленте — прокручиваем к нему и остаёмся на странице:
+   * перезагрузка выбросила бы всё прочитанное и вернула читателя в начало
+   * главы вместо того места, где он был. Если соседа нет — отдаём браузеру
+   * обычный переход по ссылке, как будто скрипта и нет.
+   *
+   * Наверх ведёт `scrollIntoView`, а не расчёт позиции: высоту плашки
+   * браузер знает сам через `scroll-margin-top` в стилях главы.
+   */
+  for (const el of Object.values(steps)) {
+    el?.addEventListener('click', (e) => {
+      const target = findLoaded(el.dataset.target);
+      if (!target) return;
+
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  // Первая отрисовка стрелок уже сделана сервером — трогаем их только
+  // когда читатель сместился.
 
   /*
    * Текущей считается глава, занимающая середину экрана. Узкая полоса, а не

@@ -8,10 +8,6 @@ social_links:
     url: "https://t.me/pace_of_honey"
   - title: "MAX"
     url: "https://max.ru/channel_pace_of_honey"
-  - title: "ВКонтакте"
-    url: "https://vk.ru/pace_of_honey"
-  - title: "Дзен"
-    url: "https://dzen.ru/pace_of_honey"
 ai_endpoints:
   - title: "/llms.txt"
     url: "/llms.txt"
@@ -20,4 +16,5 @@ ai_endpoints:
 ---
 
 Сайт собран на Astro в журнальной эстетике Explorecore.
-Тексты, фотографии и смыслы созданы людьми.
+Тексты написаны людьми, фотографии сняты нами.
+Где в кадре дорисованы детали — сказано в подписи.

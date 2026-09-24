@@ -60,11 +60,11 @@ const to = readHref ?? `/series/${id}`;
 <article class="card" data-fade-up>
   <a class="link" href={to}>
     <div class="head">
-      <h3 class="h3 title">
+      <h2 class="h3 title">
         <span class="icon" aria-hidden="true">{icon}</span>{title}
-      </h3>
+      </h2>
       <p class="cta mono">
-        {readHref ? 'открыть с 1-й главы →' : 'смотреть серию →'}
+        {readHref ? 'открыть с 1-й статьи →' : 'смотреть серию →'}
       </p>
     </div>
 
@@ -90,9 +90,9 @@ const to = readHref ?? `/series/${id}`;
   */}
   <p class="foot mono">
     {episodes !== undefined && (
-      <span class="count">{episodes} {episodes === 1 ? 'глава' : episodes < 5 ? 'главы' : 'глав'}</span>
+      <span class="count">{episodes} {episodes === 1 ? 'статья' : episodes < 5 ? 'статьи' : 'статей'}</span>
     )}
-    {readHref && <a class="toc" href={`/series/${id}`}>все главы</a>}
+    {readHref && <a class="toc" href={`/series/${id}`}>все статьи</a>}
   </p>
 </article>
 
@@ -130,7 +130,7 @@ const to = readHref ?? `/series/${id}`;
   .desc { margin-top: .75rem; line-height: 1.5; font-size: var(--fs-sm); opacity: .75; }
 
   .foot { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin-top: .5rem; }
-  .count { opacity: .45; }
+  .count { opacity: var(--dim); }
   .toc { color: var(--accent); text-decoration: none; }
   .toc:hover { text-decoration: underline; text-underline-offset: .2em; }
 

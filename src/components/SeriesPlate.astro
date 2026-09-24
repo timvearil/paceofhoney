@@ -24,23 +24,49 @@ interface Props {
   total: number;
   /** Адрес первой главы нити. Пусто, если читатель и так в начале. */
   firstHref?: string;
+  /** Соседи текущей главы. Пусто — стрелка гаснет, но остаётся на месте. */
+  prevHref?: string;
+  nextHref?: string;
 }
 
-const { series, number, total, firstHref } = Astro.props;
+const { series, number, total, firstHref, prevHref, nextHref } = Astro.props;
 const s = series.data;
 ---
 
 <div class="plate mono" data-plate>
   <p class="where">
     <span aria-hidden="true">{s.icon}</span>
-    <span class="name">{s.kind === 'serial' ? 'Сериал' : 'Подборка'} «{s.title}»</span>
+    <span class="name">Журнал «{s.title}»</span>
     <span class="sep" aria-hidden="true">·</span>
-    <span data-plate-count>Глава {number} из {total}</span>
+    <span data-plate-count>Статья {number} из {total}</span>
+  </p>
+
+  <p class="steps">
+    <a
+      class="step"
+      data-step="prev"
+      href={prevHref || undefined}
+      aria-label="Предыдущая статья"
+      aria-disabled={prevHref ? undefined : 'true'}
+    >
+      <span class="tri" aria-hidden="true">&#9664;</span>
+      <span class="word">назад</span>
+    </a>
+    <a
+      class="step"
+      data-step="next"
+      href={nextHref || undefined}
+      aria-label="Следующая статья"
+      aria-disabled={nextHref ? undefined : 'true'}
+    >
+      <span class="word">вперёд</span>
+      <span class="tri" aria-hidden="true">&#9654;</span>
+    </a>
   </p>
 
   <p class="ways">
-    {firstHref && <a class="first" href={firstHref}>01: начать с 1-й главы</a>}
-    <a href={`/series/${s.id}`}>📋 все главы серии</a>
+    {firstHref && <a class="first" href={firstHref}>01: начать с 1-й статьи</a>}
+    <a href={`/series/${s.id}`}>📋 все статьи журнала</a>
   </p>
 </div>
 
@@ -87,6 +113,31 @@ const s = series.data;
   .name { font-weight: 700; }
   .sep { opacity: .4; }
 
+  /* -----------------------------------------------------------------
+     Шаг по главам.
+
+     Зона нажатия намеренно больше значка: сам треугольник мелкий, а палец
+     на телефоне — нет. Отрицательные поля возвращают строке её высоту,
+     чтобы увеличенная мишень не раздувала плашку.
+     ----------------------------------------------------------------- */
+  .steps { display: flex; align-items: center; gap: .25rem; margin-left: auto; }
+
+  .step {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .7rem .6rem;
+    margin: -.7rem 0;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+    border-radius: var(--radius);
+  }
+  .step:hover .word { text-decoration: underline; text-underline-offset: .2em; }
+  .tri { font-size: .8em; line-height: 1; }
+
+  /* Конец нити: стрелка не исчезает, а гаснет. Исчезнувшая сдвинула бы
+     соседнюю под палец, уже занесённый над ней. */
+  .step[aria-disabled] { opacity: .25; pointer-events: none; }
+
   .ways { display: flex; flex-wrap: wrap; gap: 1rem; }
   .ways a { color: var(--accent); text-decoration: none; white-space: nowrap; }
   .ways a:hover { text-decoration: underline; text-underline-offset: .2em; }
@@ -96,5 +147,10 @@ const s = series.data;
   @media (max-width: 34rem) {
     .ways { display: none; }
     .plate { padding-bottom: .5rem; }
+
+    /* Остаются одни треугольники: слово «вперёд» рядом с названием серии
+       на узком экране переносит строку и раздваивает плашку. */
+    .word { display: none; }
+    .step { padding-inline: .75rem; }
   }
 </style>

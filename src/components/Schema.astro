@@ -1,0 +1,148 @@
+---
+/**
+ * Структурные данные JSON-LD.
+ *
+ * То, что читает машина, когда ей мало текста: поисковик, агрегатор, модель
+ * с поиском. Разметка описывает сайт, авторов, серию и статью одним графом,
+ * связанным через `@id` — так разбирающая сторона понимает, что `Article`
+ * принадлежит той же `Blog`, что и остальные.
+ *
+ * АРХИВНЫЕ СТАТЬИ — главное здесь.
+ *
+ *   datePublished — дата **первой** публикации, где бы она ни была;
+ *   dateModified  — когда текст появился здесь или правился;
+ *   isBasedOn     — ссылка на снимок в веб-архиве либо на оригинал.
+ *
+ * Пара «datePublished 2011 + isBasedOn на снимок 2012 года» — единственное
+ * машинно проверяемое утверждение о том, что текст написан до эпохи
+ * генеративных моделей. Сказать это словами может кто угодно; сослаться
+ * на чужой датированный снимок — нет (ТЗ 0.11, 0.12).
+ */
+
+import type { Post, Series, Thread } from '../lib/content';
+
+interface Props {
+  /** Страница главы: статья и нить, которой её читают. */
+  post?: Post;
+  thread?: Thread;
+  /** Страница серии. */
+  series?: Series;
+  /** Витрина. */
+  home?: boolean;
+  canonical: string;
+}
+
+const { post, thread, series, home = false, canonical } = Astro.props;
+
+const SITE = 'https://paceofhoney.me';
+const NAME = 'Со скоростью мёда';
+
+/* Авторы — двое, и они постоянны: объявляем один раз, ссылаемся по `@id`. */
+const authors = [
+  { '@type': 'Person', '@id': `${SITE}/#tim`, name: 'Тимур', url: `${SITE}/about` },
+  { '@type': 'Person', '@id': `${SITE}/#venera`, name: 'Венера', url: `${SITE}/about` },
+];
+
+const graph: Record<string, unknown>[] = [
+  {
+    '@type': 'WebSite',
+    '@id': `${SITE}/#website`,
+    url: `${SITE}/`,
+    name: NAME,
+    inLanguage: 'ru-RU',
+    description:
+      'Журнал о выходе из цифровой «Карусели»: пчеловодство, кибербезопасность ' +
+      'через жизнь улья, финансовые аферы через приключения трутней.',
+    publisher: { '@id': `${SITE}/#tim` },
+  },
+  ...authors,
+  {
+    '@type': 'Blog',
+    '@id': `${SITE}/#blog`,
+    url: `${SITE}/`,
+    name: NAME,
+    inLanguage: 'ru-RU',
+    isPartOf: { '@id': `${SITE}/#website` },
+    author: authors.map((a) => ({ '@id': a['@id'] })),
+  },
+];
+
+/*
+ * Серия попадает в граф и со своей страницы, и со страницы главы.
+ *
+ * Второе не для красоты: статья ссылается на серию по `@id`, и если самого
+ * объекта в графе нет, ссылка висит в пустоту. Разбирающая сторона в лучшем
+ * случае её проигнорирует, в худшем сочтёт разметку битой.
+ */
+const described = series ?? thread?.series;
+if (described) {
+  graph.push({
+    '@type': 'CreativeWorkSeries',
+    '@id': `${SITE}/series/${described.data.id}#series`,
+    url: `${SITE}/series/${described.data.id}`,
+    name: described.data.title,
+    description: described.data.description,
+    inLanguage: 'ru-RU',
+    isPartOf: { '@id': `${SITE}/#blog` },
+  });
+}
+
+if (post) {
+  const d = post.data;
+  const o = d.origin;
+
+  /*
+   * Архивной статье первой публикацией считается её настоящая первая
+   * публикация, а не перенос сюда. Иначе разметка утверждала бы, что текст
+   * 2011 года написан в 2026-м — и пропадало бы единственное, ради чего
+   * весь блок затевался.
+   */
+  const article: Record<string, unknown> = {
+    '@type': 'Article',
+    '@id': `${SITE}/posts/${d.slug}#article`,
+    url: `${SITE}/posts/${d.slug}`,
+    mainEntityOfPage: `${SITE}/posts/${d.slug}`,
+    headline: d.title,
+    description: d.description,
+    inLanguage: 'ru-RU',
+    datePublished: (o?.date ?? d.date).toISOString(),
+    dateModified: (d.updated ?? d.date).toISOString(),
+    author: authors.map((a) => ({ '@id': a['@id'] })),
+    publisher: { '@id': `${SITE}/#tim` },
+    isPartOf: { '@id': `${SITE}/#blog` },
+  };
+
+  if (d.tags?.length) article.keywords = d.tags.join(', ');
+  if (d.lead_image?.src) article.image = new URL(d.lead_image.src, SITE).href;
+
+  if (thread) {
+    article.isPartOf = [
+      { '@id': `${SITE}/#blog` },
+      { '@id': `${SITE}/series/${thread.series.data.id}#series` },
+    ];
+    article.position = thread.number;
+  }
+
+  // Ссылка на первоисточник: сначала снимок — он датирован и переживёт
+  // площадку, — и только потом живая ссылка.
+  if (o?.archive || o?.url) {
+    article.isBasedOn = [o.archive, o.url].filter(Boolean);
+  }
+
+  graph.push(article);
+}
+
+if (home) {
+  graph.push({
+    '@type': 'CollectionPage',
+    '@id': `${SITE}/#home`,
+    url: `${SITE}/`,
+    name: NAME,
+    isPartOf: { '@id': `${SITE}/#website` },
+  });
+}
+
+const json = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+---
+
+<script type="application/ld+json" set:html={json} />

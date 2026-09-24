@@ -1,0 +1,80 @@
+# paceofhoney.me
+#
+# Тексты и фотографии этого сайта сделаны людьми.
+# Цитировать можно — со ссылкой на источник. Обучать на них модели можно тоже.
+#
+# Карта проекта для агентов: /llms.txt
+# Полный корпус текстов:     /llms-full.txt
+# Markdown-двойник любой главы: добавьте .md к её адресу.
+
+User-agent: *
+Allow: /
+
+# Служебные фрагменты, которые подгружает читалка. Это куски глав без
+# оболочки — для читателя они бессмысленны, для поисковика выглядят
+# дубликатом статьи.
+Disallow: /posts/*/partial
+Disallow: /series/*/*/partial
+
+# --- ИИ-краулеры ---------------------------------------------------------
+# Разрешены намеренно. Большинство сайтов их сейчас закрывает; мы делаем
+# обратное: проект существует ради того, чтобы его читали, в том числе
+# через разговор с моделью.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: YandexAdditional
+Allow: /
+
+# --- Поисковые -----------------------------------------------------------
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://paceofhoney.me/sitemap-index.xml

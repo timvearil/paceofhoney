@@ -3,10 +3,12 @@ items:
   - title: "00: главная"
     url: "/"
   - title: "01: манифест"
-    url: "/manifest"
-  - title: "02: серии"
+    url: "/posts/manifest"
+  - title: "02: журналы"
     url: "/series"
-  - title: "03: о нас"
+  - title: "03: все статьи"
+    url: "/posts"
+  - title: "04: о нас"
     url: "/about"
 ---
 

@@ -13,12 +13,19 @@
  *
  * Данные в `data-*` — всё, что нужно читалке. Она ничего не вычисляет:
  * адреса приходят готовыми, посчитанными на сборке внутри нужной нити.
+ *
+ * Соседи главы лежат здесь дважды и по разным причинам. `data-next` ведёт
+ * на фрагмент для подгрузки — человеку он не годится. `data-prev-href`
+ * и `data-next-href` — обычные адреса глав, их берут стрелки в плашке.
+ * Слаги соседей нужны, чтобы стрелка сперва поискала соседа в уже
+ * загруженной ленте и прокрутила к нему, а не перезагружала страницу.
  */
 
 import type { Post, Series, Thread } from '../lib/content';
 import { canonicalHref, chapterHref, partialHref } from '../lib/content';
 import AlsoIn from './AlsoIn.astro';
 import Frame from './Frame.astro';
+import Origin from './Origin.astro';
 
 interface Props {
   post: Post;
@@ -33,7 +40,16 @@ const { post, thread, allSeries, top = false } = Astro.props;
 const d = post.data;
 const seriesId = thread.series.data.id;
 
-const when = d.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+/*
+ * Архивная статья датируется своим временем, а не днём переноса на сайт.
+ *
+ * Иначе в шапке стояло бы «23 сентября 2026», а примечанием ниже —
+ * «пятнадцать лет назад», и читатель спотыкался бы о противоречие. День
+ * переноса — техническая мелочь: он решает порядок в ленте «свежее» и больше
+ * нигде не нужен.
+ */
+const shown = d.origin?.date ?? d.date;
+const when = shown.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 const Heading = top ? 'h1' : 'h2';
 ---
 
@@ -47,9 +63,16 @@ const Heading = top ? 'h1' : 'h2';
   data-href={chapterHref(post, seriesId)}
   data-canonical={canonicalHref(post)}
   data-next={thread.next ? partialHref(thread.next, seriesId) : ''}
+  data-prev-href={thread.prev ? chapterHref(thread.prev, seriesId) : ''}
+  data-prev-slug={thread.prev?.data.slug ?? ''}
+  data-next-href={thread.next ? chapterHref(thread.next, seriesId) : ''}
+  data-next-slug={thread.next?.data.slug ?? ''}
 >
   <header class="head">
-    <p class="mono over">Глава {thread.number} · {when}</p>
+    <p class="mono over">
+      Статья {thread.number} · {when}
+      {d.origin && <> · <Origin post={post} brief /></>}
+    </p>
     <Heading class={top ? undefined : 'h1'}>{d.title}</Heading>
     <p class="lead text">{d.description}</p>
   </header>
@@ -64,6 +87,10 @@ const Heading = top ? 'h1' : 'h2';
     <slot />
   </div>
 
+  {/* Примечание о происхождении — после текста: читатель добирается до него,
+      уже прочитав статью, и только если ему стало интересно. */}
+  <Origin post={post} />
+
   {/* Прочие серии этой главы — кроме той, которой читатель уже идёт. */}
   <AlsoIn post={post} exclude={seriesId} all={allSeries} />
 </article>
@@ -71,7 +98,7 @@ const Heading = top ? 'h1' : 'h2';
 <style>
   .episode { padding-top: clamp(1.5rem, 5vw, 3rem); }
 
-  .over { opacity: .45; }
+  .over { opacity: var(--dim); }
   .head :global(h1), .head :global(h2) { margin-top: .5rem; max-width: 22ch; }
   .lead {
     margin-top: 1rem; max-width: 38rem;

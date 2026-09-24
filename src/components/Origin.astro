@@ -1,0 +1,141 @@
+---
+/**
+ * Откуда пришёл текст: возраст, первая публикация, степень переработки.
+ *
+ * Показывается только у архивных статей — тех, что выходили десять-пятнадцать
+ * лет назад на других площадках. У свежих блока `origin` нет, и компонент
+ * ничего не рисует.
+ *
+ * ДВА ВИДА. Короткий — строкой в карточке и в шапке главы, рядом с датой:
+ * там нужен только возраст, всё остальное отвлекало бы от заголовка. Полный —
+ * примечанием в конце главы: кто ссылки, снимок в архиве, что сделано
+ * с текстом. Читатель добирается до него, уже прочитав статью, и только если
+ * ему стало интересно.
+ *
+ * ПРО ГОЛОС. Различать «как есть» и «переписано» приходится потому, что это
+ * разные тексты. В первом случае читатель слышит автора тех лет со всеми его
+ * тогдашними интонациями; во втором — сегодняшнего автора, вспоминающего
+ * те события. Подменять одно другим молча нечестно.
+ *
+ * Спецификация: 01_Spec/tz-paceofhoney-v2.md, раздел 0.11
+ */
+
+import type { Post } from '../lib/content';
+
+interface Props {
+  post: Post;
+  /** Короткая строка для карточки и шапки; иначе полное примечание. */
+  brief?: boolean;
+}
+
+const { post, brief = false } = Astro.props;
+const origin = post.data.origin;
+
+const year = origin?.date.getFullYear();
+const age = year ? new Date().getFullYear() - year : 0;
+
+/**
+ * Возраст словами. «Четырнадцать лет назад» говорит больше, чем «2012»:
+ * год надо вычитать в уме, а срок ощущается сразу.
+ */
+function yearsAgo(n: number): string {
+  if (n < 1) return 'в этом году';
+  const last = n % 10;
+  const tens = n % 100;
+  const word =
+    tens >= 11 && tens <= 14 ? 'лет' : last === 1 ? 'год' : last >= 2 && last <= 4 ? 'года' : 'лет';
+  return `${n} ${word} назад`;
+}
+
+/** Имя площадки: заданное автором или выведенное из адреса. */
+function sourceName(): string | null {
+  if (origin?.source) return origin.source;
+  if (!origin?.url) return null;
+  try {
+    return new URL(origin.url).hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+const name = sourceName();
+
+/*
+ * Дата без «г.» на конце. Встроенный формат даёт «14 марта 2011 г.», и посреди
+ * фразы это спотыкание: читаешь «вышел 14 марта 2011 г. на Blogspot».
+ */
+const MONTHS = ['января','февраля','марта','апреля','мая','июня',
+                'июля','августа','сентября','октября','ноября','декабря'];
+const when = origin
+  ? `${origin.date.getDate()} ${MONTHS[origin.date.getMonth()]} ${origin.date.getFullYear()}`
+  : '';
+
+/*
+ * Что именно сказать про текст. Формулировки разведены намеренно: у каждой
+ * своя точка отсчёта. «Опубликовано» относится к тексту, который читатель
+ * сейчас видит; «оригинал» — к тому, которого он уже не увидит.
+ */
+const wording = {
+  original: {
+    short: 'текст тех лет, без правок',
+    long: `Текст публикуется как есть, без правок${name ? `. Впервые вышел ${when} на ${name}` : `. Впервые опубликован ${when}`}.`,
+  },
+  edited: {
+    short: 'текст тех лет, вычитан',
+    long: `Текст тех лет. При переносе исправлены опечатки и оформление, смысл не тронут${name ? `. Впервые вышел ${when} на ${name}` : `. Впервые опубликован ${when}`}.`,
+  },
+  rewritten: {
+    short: 'переписано заново',
+    long: `Этот текст написан заново${name ? `. Оригинал вышел ${when} на ${name}` : `. Оригинал опубликован ${when}`} — и говорит другим голосом.`,
+  },
+}[origin?.state ?? 'original'];
+---
+
+{origin && (brief ? (
+  /* Возраста здесь нет намеренно: рядом уже стоит дата первой публикации,
+     и «2011 · 15 лет назад» было бы повтором. Возраст словами — ниже,
+     в примечании, где для него есть место. */
+  <span class="origin-brief mono">{wording.short}</span>
+) : (
+  <aside class="origin" aria-label="Происхождение текста">
+    <p class="line">
+      <span class="age">{yearsAgo(age)}.</span> {wording.long}
+    </p>
+
+    {(origin.url || origin.archive) && (
+      <p class="links mono">
+        {origin.url && (
+          <a href={origin.url} rel="noopener nofollow" target="_blank">
+            первая публикация <span aria-hidden="true">↗</span>
+          </a>
+        )}
+        {origin.archive && (
+          <a href={origin.archive} rel="noopener nofollow" target="_blank">
+            снимок в веб-архиве <span aria-hidden="true">↗</span>
+          </a>
+        )}
+      </p>
+    )}
+  </aside>
+))}
+
+<style>
+  .origin-brief { opacity: var(--dim); }
+  .sep { opacity: .4; }
+
+  .origin {
+    margin-top: clamp(2rem, 5vw, 3rem);
+    padding-top: 1rem;
+    max-width: 40rem;
+    border-top: 1px solid;
+    border-color: color-mix(in srgb, currentColor 18%, transparent);
+    font-size: var(--fs-sm);
+  }
+
+  .line { opacity: var(--dim); line-height: 1.55; }
+  .age { font-weight: var(--bold); opacity: .85; }
+
+  .links { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: .6rem; }
+  .links a { color: var(--accent); text-decoration: none; }
+  .links a:hover { text-decoration: underline; text-underline-offset: .2em; }
+</style>

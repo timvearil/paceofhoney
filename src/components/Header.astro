@@ -112,7 +112,7 @@ const isActive = (url: string) => (url === '/' ? here === '/' : here.startsWith(
   .brand { font-weight: 700; text-decoration: none; color: inherit; white-space: nowrap; }
 
   .menu { display: none; list-style: none; gap: 1.25rem; margin: 0 auto 0 1rem; padding: 0; }
-  .menu .link { color: inherit; text-decoration: none; opacity: .6; transition: opacity var(--t-fast); }
+  .menu .link { color: inherit; text-decoration: none; opacity: var(--dim); transition: opacity var(--t-fast); }
   .menu .link:hover { opacity: 1; }
   .menu .link.active { opacity: 1; font-weight: 700; }
 
@@ -155,7 +155,7 @@ const isActive = (url: string) => (url === '/' ? here === '/' : here.startsWith(
   .close { position: absolute; top: 1.25rem; right: 1.25rem; font-size: 1.5rem; }
 
   .drawer-menu { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
-  .drawer-menu a { color: inherit; text-decoration: none; opacity: .6; font-size: var(--fs-sm); }
+  .drawer-menu a { color: inherit; text-decoration: none; opacity: var(--dim); font-size: var(--fs-sm); }
   .drawer-menu a.active { opacity: 1; font-weight: 700; }
 
   .overlay {

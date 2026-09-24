@@ -29,8 +29,8 @@ const list = others.filter(Boolean) as Thread[];
 ---
 
 {list.length > 0 && (
-  <aside class="also" aria-label="Другие серии этой главы">
-    <p class="mono head">Эта глава также входит в</p>
+  <aside class="also" aria-label="Другие журналы этой статьи">
+    <p class="mono head">Эта статья также входит в</p>
     <ul>
       {list.map((t) => (
         <li>
@@ -38,7 +38,7 @@ const list = others.filter(Boolean) as Thread[];
             <span class="icon" aria-hidden="true">{t.series.data.icon}</span>
             <span class="name">«{t.series.data.title}»</span>
             <span class="mono place">
-              {t.series.data.kind === 'serial' ? `глава ${t.number} из ${t.total}` : 'подборка'}
+              {t.series.data.kind === 'serial' ? `статья ${t.number} из ${t.total}` : 'без нумерации'}
             </span>
             <span class="arrow" aria-hidden="true">→</span>
           </a>
@@ -50,7 +50,7 @@ const list = others.filter(Boolean) as Thread[];
 
 <style>
   .also { margin-top: clamp(2.5rem, 6vw, 4rem); }
-  .head { opacity: .45; margin-bottom: .75rem; }
+  .head { opacity: var(--dim); margin-bottom: .75rem; }
 
   ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
 
@@ -66,7 +66,7 @@ const list = others.filter(Boolean) as Thread[];
 
   .icon { font-size: .9em; }
   .name { font-weight: var(--bold); }
-  .place { opacity: .45; }
+  .place { opacity: var(--dim); }
   .arrow { margin-left: auto; color: var(--accent); transition: padding-left var(--t-fast); }
   a:hover .arrow { padding-left: .4rem; }
 </style>

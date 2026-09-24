@@ -4,6 +4,8 @@ import sitemap from '@astrojs/sitemap';
 import { unified } from '@astrojs/markdown-remark';
 import { remarkObsidian } from './src/plugins/remark-obsidian.mjs';
 import { rehypeFigures } from './src/plugins/rehype-figures.mjs';
+import { remarkDialogue } from './src/plugins/remark-dialogue.mjs';
+import { remarkTypography } from './src/plugins/remark-typography.mjs';
 import images from './src/integrations/images.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
@@ -30,8 +32,25 @@ export default defineConfig({
     // на странице сам, без перезапуска сервера.
     images(),
     sitemap({
-      // Черновики и служебные адреса в карту сайта не попадают.
-      filter: (page) => !page.includes('/_'),
+      /*
+       * В карте сайта — только канонические адреса.
+       *
+       * Отсюда три исключения, и каждое стоило бы дубликатов в выдаче:
+       *
+       *   · служебные фрагменты `/partial` — голые куски глав без оболочки,
+       *     которые подгружает читалка. Для поисковика это копия статьи;
+       *   · боковые нити `/series/{id}/{slug}` — та же глава, читаемая другой
+       *     серией. Её `canonical` указывает на короткий адрес, и класть её
+       *     в карту значит спорить с самим собой: «вот страница, но настоящая
+       *     она другая»;
+       *   · всё, что начинается с подчёркивания, — служебное по соглашению.
+       */
+      filter: (page) => {
+        const path = new URL(page).pathname;
+        if (path.includes('/partial')) return false;
+        if (/^\/series\/[^/]+\/[^/]+/.test(path)) return false;
+        return !path.includes('/_');
+      },
     }),
   ],
 
@@ -54,7 +73,7 @@ export default defineConfig({
     // нового обработчика, получаем зрелую экосистему. Сборка сайта на два
     // десятка страниц занимает полторы секунды, экономить тут нечего.
     processor: unified({
-      remarkPlugins: [[remarkObsidian, { root: process.cwd() }]],
+      remarkPlugins: [[remarkObsidian, { root: process.cwd() }], remarkDialogue, remarkTypography],
       // Иллюстрации внутри текста доводятся до вида ведущего кадра: подпись,
       // проявление цвета, размер под ширину колонки. Именно rehype, а не
       // remark: к этому моменту Astro уже посчитал srcset, и мы ничего

@@ -239,6 +239,24 @@ check('canonical показывает один адрес текста, без �
   doc.querySelector('link[rel=canonical]')?.getAttribute('href'),
   `http://localhost${canonOf(one.body)}`);
 
+console.log('\n-- стрелки в плашке переехали вместе с читателем --');
+const step = (side) => doc.querySelector(`[data-step="${side}"]`);
+check('«назад» ведёт на главу, с которой пришли',
+  step('prev')?.getAttribute('href'), entryHref);
+check('«вперёд» ведёт на третью главу, а не на вторую',
+  step('next')?.getAttribute('href'), attr(one.body, 'data-next-href'));
+check('«назад» знает, кого искать в ленте',
+  step('prev')?.dataset.target, entrySlug);
+
+console.log('\n-- клик по «назад»: сосед уже в ленте --');
+let scrolledTo = null;
+for (const el of eps()) el.scrollIntoView = function () { scrolledTo = this.dataset.slug; };
+const clicked = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+step('prev').dispatchEvent(clicked);
+check('переход отменён — остаёмся на странице', clicked.defaultPrevented, true);
+check('прокрутили к нужной главе', scrolledTo, entrySlug);
+check('новых запросов в сеть не ушло', requests.length, 1);
+
 console.log('\n-- подтягивается третья --');
 watchdog.fire(sentinel);
 await wait();
@@ -324,7 +342,19 @@ console.log('\n-- цепная подгрузка при коротких гла
   fresh.startReader();
   await new Promise((r) => setTimeout(r, 200));
 
-  check('подтянулись обе следующие главы, а не одна', asked, found.chain.map((c) => c.url));
+  /*
+   * Сравниваем начало списка, а не весь список целиком.
+   *
+   * Заглушка знает только три главы цепочки, а настоящая серия может быть
+   * длиннее — и поток честно попросит четвёртую. Она вернёт 404, поток
+   * корректно остановится, но строгое равенство объявило бы это провалом.
+   * Проверяем то, что проверяем: что глав подтянулось больше одной.
+   */
+  check(
+    'подтянулись обе следующие главы, а не одна',
+    asked.slice(0, found.chain.length),
+    found.chain.map((c) => c.url),
+  );
 }
 
 /* ------------------------------------------------------------------------
@@ -345,9 +375,21 @@ const threadId = inThread(entryHref);
 
 if (threadId) {
   console.log('\n-- нить не теряется при прокрутке --');
-  check('все главы цепочки идут одной серией',
-    [entryHref, ...found.chain.map((c) => hrefOf(c.body))].map(inThread),
-    [threadId, threadId, threadId]);
+  /*
+   * Ни одна глава цепочки не уходит в ЧУЖУЮ серию.
+   *
+   * Раньше здесь стояло «все адреса вида /series/{id}/…», и это было верно
+   * случайно: в нити, на которой шёл стенд, не попадалось статьи, для которой
+   * эта же серия — ведущая. У такой статьи адрес короткий, канонический
+   * (`/posts/{slug}`), и проверка честно падала, хотя поведение правильное.
+   *
+   * Правильный инвариант мягче: адрес либо короткий, либо принадлежит
+   * той же серии, что и вся нить. Чужой серии в цепочке быть не должно.
+   */
+  const threads = [entryHref, ...found.chain.map((c) => hrefOf(c.body))].map(inThread);
+  check('ни одна глава не уходит в чужую серию',
+    threads.filter((t) => t !== null && t !== threadId),
+    []);
   check('канонические адреса — короткие, без серии',
     [found.page, ...found.chain.map((c) => c.body)]
       .map(canonOf)

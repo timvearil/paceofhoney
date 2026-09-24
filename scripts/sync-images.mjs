@@ -125,10 +125,27 @@ async function squeeze(from, to) {
     : ext === '.avif' ? pipeline.avif({ quality: QUALITY })
     : pipeline.jpeg({ quality: QUALITY, mozjpeg: true });
 
-  // sharp не пишет в файл, который сам же читает. При обработке на месте
-  // сначала собираем результат в памяти, потом кладём поверх.
-  if (from === to) await fs.writeFile(to, await out.toBuffer());
-  else await out.toFile(to);
+  /*
+   * Пишем через временный файл и переименование.
+   *
+   * Переименование внутри одной папки — операция неделимая: сторонний
+   * наблюдатель видит либо старый файл целиком, либо новый целиком, и никогда
+   * промежуточное состояние. Прямая запись такой гарантии не даёт, и это уже
+   * стоило одной поломки: сервер разработки пересобирал список изображений
+   * ровно в тот момент, когда сюда писались перенесённые кадры, и собрал его
+   * пустым. Снаружи это выглядело как «local images must be imported» на
+   * совершенно постороннем файле.
+   *
+   * Заодно решается и то, что sharp не пишет в файл, который сам же читает.
+   */
+  const tmp = `${to}.tmp-${process.pid}`;
+  try {
+    await fs.writeFile(tmp, await out.toBuffer());
+    await fs.rename(tmp, to);
+  } catch (e) {
+    await fs.rm(tmp, { force: true });
+    throw e;
+  }
 }
 
 /**
@@ -187,6 +204,42 @@ async function tidyTarget() {
 
   await fs.writeFile(TIDY_FILE, JSON.stringify(done, null, 2) + '\n', 'utf8');
   if (tidied) console.log(`[картинки] прибрано в репозитории: ${tidied}`);
+}
+
+/**
+ * Номер в имени статьи и номер её кадров — одно и то же число.
+ *
+ * Файлы статей названы «09 Космический городок.md», кадры к ним —
+ * «9-lead-image.jpg», «9-1.jpg». Связь держится на договорённости, а не
+ * на коде: адрес статьи берётся из `slug`, имя файла сайт нигде не
+ * показывает. Ради этой договорённости всё и затевалось — найти статью
+ * по номеру кадра и наоборот, не открывая файлы.
+ *
+ * Проверка живёт здесь, а не в `assertContentIsSound`: там у статьи `id`
+ * равен её `slug`, и до имени файла не дотянуться. Здесь файлы видны
+ * как есть.
+ *
+ * Это предупреждение, а не ошибка. Ронять сборку из-за имени файла,
+ * которого нет на сайте, — чересчур.
+ */
+async function checkNumbering(files) {
+  const off = [];
+
+  for (const file of files) {
+    const name = path.basename(file);
+    const inName = name.match(/^(\d+)/)?.[1];
+    if (!inName) continue;
+
+    const text = await fs.readFile(file, 'utf8');
+    const inImage = text.match(/^lead_image:.*?[/"']?(\d+)-lead-image/m)?.[1];
+    if (inImage && Number(inName) !== Number(inImage)) {
+      off.push(`  · ${name} — кадры названы по номеру ${inImage}`);
+    }
+  }
+
+  if (off.length) {
+    console.warn('[нумерация] имя файла и номер кадров разошлись:\n' + off.join('\n'));
+  }
 }
 
 /** Все файлы контента, где могут встретиться ссылки на картинки. */
@@ -260,6 +313,10 @@ async function main() {
     hasArchive = false;
   }
 
+  // Нумерация проверяется первой: она не зависит ни от архива кадров,
+  // ни от переноса, а без архива скрипт дальше не идёт.
+  await checkNumbering(await contentFiles());
+
   // Кадры могли положить прямо в папку репозитория, минуя архив. Это законный
   // путь, но тогда их никто не ужал — прибираем здесь, до всего остального.
   await tidyTarget();
@@ -322,8 +379,9 @@ async function main() {
    * Ссылка на кадр, которого нет ни в архиве, ни в репозитории, — опечатка
    * в имени, и сказать о ней надо своими словами, назвав статью.
    */
+  const files = await contentFiles();
   const wanted = new Map(); // имя → { откуда, где встретилось }
-  for (const file of await contentFiles()) {
+  for (const file of files) {
     for (const [name, kind] of mentionedImages(await fs.readFile(file, 'utf8'))) {
       const seen = wanted.get(name) ?? { kind, where: new Set() };
       seen.where.add(path.basename(file));

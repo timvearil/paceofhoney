@@ -8,6 +8,7 @@
  */
 
 import type { Post } from '../lib/content';
+import Origin from './Origin.astro';
 
 interface Props {
   post: Post;
@@ -28,7 +29,13 @@ const { title, description, slug, date, tags } = post.data;
 
 const to = href ?? `/posts/${slug}`;
 
-const when = date.toLocaleDateString('ru-RU', {
+/*
+ * Архивная статья показывает дату первой публикации, а не переноса на сайт:
+ * текст датируется своим временем. День переноса решает только порядок
+ * в ленте «свежее».
+ */
+const shown = post.data.origin?.date ?? date;
+const when = shown.toLocaleDateString('ru-RU', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
@@ -39,15 +46,18 @@ const when = date.toLocaleDateString('ru-RU', {
   <a class="link" href={to}>
     <p class="meta mono">
       {number !== undefined && <span class="num">{String(number).padStart(2, '0')}</span>}
-      <time datetime={date.toISOString().slice(0, 10)}>{when}</time>
+      <time datetime={shown.toISOString().slice(0, 10)}>{when}</time>
       {badges.map((b) => <span class="badge">{b}</span>)}
     </p>
 
     <h3 class="h4 title">{title}</h3>
     <p class="lead">{description}</p>
 
-    {tags.length > 0 && (
-      <p class="tags mono">{tags.map((t) => <span>#{t}</span>)}</p>
+    {(tags.length > 0 || post.data.origin) && (
+      <p class="tags mono">
+        {tags.map((t) => <span>#{t}</span>)}
+        <Origin post={post} brief />
+      </p>
     )}
   </a>
 </article>
@@ -68,7 +78,7 @@ const when = date.toLocaleDateString('ru-RU', {
   }
   .link:hover { border-color: var(--accent); }
 
-  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; opacity: .5; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; opacity: var(--dim); }
   .num { font-weight: 700; opacity: .8; }
   .badge::before { content: '· '; }
 
@@ -76,5 +86,5 @@ const when = date.toLocaleDateString('ru-RU', {
   .link:hover .title { color: var(--accent); }
 
   .lead { margin-top: .5rem; max-width: 46ch; line-height: 1.55; opacity: .75; font-size: var(--fs-sm); }
-  .tags { margin-top: .6rem; opacity: .4; display: flex; flex-wrap: wrap; gap: .75rem; }
+  .tags { margin-top: .6rem; opacity: var(--dim); display: flex; flex-wrap: wrap; gap: .75rem; }
 </style>

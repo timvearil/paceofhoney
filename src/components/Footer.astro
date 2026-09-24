@@ -78,16 +78,16 @@ const Content = entry ? (await render(entry)).Content : null;
   .slogan { max-width: 22ch; margin: 0; }
 
   .social { display: flex; flex-wrap: wrap; gap: 1rem; list-style: none; margin: 0; padding: 0; }
-  .social a { color: inherit; text-decoration: none; opacity: .6; transition: opacity var(--t-fast); }
+  .social a { color: inherit; text-decoration: none; opacity: var(--dim); transition: opacity var(--t-fast); }
   .social a:hover { opacity: 1; }
 
-  .human { margin-top: 3rem; opacity: .5; max-width: 42ch; line-height: 1.5; }
+  .human { margin-top: 3rem; opacity: var(--dim); max-width: 42ch; line-height: 1.5; }
   .human :global(p) { margin: 0; }
 
   .legal {
     display: flex; flex-wrap: wrap; gap: .5rem 2rem; justify-content: space-between;
     margin-top: .75rem; padding-bottom: 1rem;
-    font-size: var(--fs-xxs); opacity: .5;
+    font-size: var(--fs-xxs); opacity: var(--dim);
   }
   .legal a { color: inherit; }
 

@@ -42,6 +42,9 @@ const chromeHeight = Astro.slots.has('plate') ? '7.25rem' : '4.5rem';
 <html lang="ru" style={`--chrome-height:${chromeHeight}`}>
   <head>
     <BaseHead {...Astro.props} />
+    {/* Структурные данные приходят слотом: их состав зависит от того, что
+        за страница, а `BaseLayout` этого не знает и знать не должен. */}
+    <slot name="schema" />
   </head>
 
   <body>

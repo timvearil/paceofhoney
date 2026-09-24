@@ -15,12 +15,14 @@ interface Props {
   title: string;
   description: string;
   updated?: Date;
+  /** Ведущий кадр страницы — он же картинка ссылки в мессенджерах. */
+  image?: string;
 }
 
-const { title, description, updated } = Astro.props;
+const { title, description, updated, image } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} updatedAt={updated}>
+<BaseLayout title={title} description={description} updatedAt={updated} image={image}>
   <article class="container page">
     <header class="head">
       <h1>{title}</h1>
@@ -37,7 +39,7 @@ const { title, description, updated } = Astro.props;
     </div>
 
     <p class="onward">
-      <a href="/series" class="link--right">Перейти к сериям и сюжетам <span>→</span></a>
+      <a href="/series" class="link--right">Перейти к журналам на столике <span>→</span></a>
     </p>
   </article>
 
@@ -48,7 +50,7 @@ const { title, description, updated } = Astro.props;
   .page { padding-top: clamp(2rem, 6vw, 4rem); }
 
   .head { max-width: 48rem; }
-  .stamp { margin-top: .75rem; opacity: .45; }
+  .stamp { margin-top: .75rem; opacity: var(--dim); }
   .rule {
     margin-top: 1.5rem;
     border: none; border-top: 1px solid;

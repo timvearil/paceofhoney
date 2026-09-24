@@ -11,6 +11,7 @@
 import type { GetStaticPaths } from 'astro';
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Schema from '../../components/Schema.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { Image } from 'astro:assets';
@@ -37,7 +38,7 @@ const isSerial = s.kind === 'serial';
 const episodes = await getEpisodes(s.id);
 const listed = isSerial ? episodes : [...episodes].reverse();
 
-const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4 && (n < 12 || n > 14) ? 'главы' : 'глав');
+const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <= 4 && (n < 12 || n > 14) ? 'статьи' : 'статей');
 ---
 
 <BaseLayout
@@ -45,10 +46,11 @@ const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4
   description={s.description}
   image={s.cover_image?.src}
 >
+  <Schema slot="schema" series={entry} canonical={`/series/${s.id}`} />
   <div class="container page">
     <header class="head">
       <p class="mono index">
-        02 / серии · {isSerial ? 'сериал' : 'подборка'}
+        02 / журнал
       </p>
       <h1><span class="icon" aria-hidden="true">{s.icon}</span>{s.title}</h1>
       <p class="lead text">{s.description}</p>
@@ -58,13 +60,16 @@ const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4
     </header>
 
     {s.cover_image && (
-      <div class="cover" data-focus-frame>
-        <Image
-          src={s.cover_image} alt={s.cover_alt ?? ''}
-          widths={[768, 1280, 1920]} sizes="(min-width: 64rem) 60rem, 100vw" loading="eager"
-          style={`object-position:${s.cover_position}`}
-        />
-      </div>
+      <figure class="cover-figure">
+        <div class="cover" data-focus-frame>
+          <Image
+            src={s.cover_image} alt={s.cover_alt ?? ''}
+            widths={[768, 1280, 1920]} sizes="(min-width: 64rem) 60rem, 100vw" loading="eager"
+            style={`object-position:${s.cover_position}`}
+          />
+        </div>
+        {s.cover_caption && <figcaption class="mono">{s.cover_caption}</figcaption>}
+      </figure>
     )}
 
     <div class="post-content text intro">
@@ -72,7 +77,7 @@ const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4
     </div>
 
     <section class="section" aria-labelledby="eps">
-      <h2 id="eps" class="sr-only">Главы</h2>
+      <h2 id="eps" class="sr-only">Статьи</h2>
 
       {listed.length > 0 ? (
         <div class="list">
@@ -85,12 +90,12 @@ const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4
           ))}
         </div>
       ) : (
-        <p class="empty">В этой серии пока нет опубликованных глав.</p>
+        <p class="empty">В этом журнале пока нет опубликованных статей.</p>
       )}
     </section>
 
     <p class="onward">
-      <a href="/series" class="link--right">Все серии <span>→</span></a>
+      <a href="/series" class="link--right">Все журналы <span>→</span></a>
     </p>
   </div>
 
@@ -99,10 +104,10 @@ const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4
 
 <style>
   .page { padding-top: clamp(2rem, 6vw, 4rem); }
-  .index { opacity: .45; margin-bottom: 1rem; }
+  .index { opacity: var(--dim); margin-bottom: 1rem; }
   .icon { margin-right: .5rem; font-size: .75em; }
   .lead { margin-top: 1.25rem; max-width: 38rem; line-height: 1.6; opacity: .8; font-size: var(--fs-lg); }
-  .count { margin-top: .75rem; opacity: .45; }
+  .count { margin-top: .75rem; opacity: var(--dim); }
 
   /* Только геометрия: широкая полоса под шапкой. Проявление цвета и тёплый
      свет — общие правила [data-focus-frame] в tokens.css. */
@@ -114,10 +119,18 @@ const word = (n: number) => (n === 1 ? 'глава' : n % 10 >= 2 && n % 10 <= 4
   }
   .cover :global(img) { width: 100%; height: 100%; object-fit: cover; }
 
+  /* Подпись под обложкой — тем же голосом, что подписи кадров в главах. */
+  .cover-figure { margin: 0; }
+  .cover-figure figcaption {
+    margin-top: .6rem;
+    font-size: var(--fs-sm);
+    opacity: var(--dim);
+  }
+
   .intro { max-width: 40rem; margin-top: clamp(2rem, 5vw, 3rem); }
 
   .list { border-bottom: 1px solid; border-color: color-mix(in srgb, currentColor 18%, transparent); }
-  .empty { opacity: .5; }
+  .empty { opacity: var(--dim); }
 
   .onward { margin-top: clamp(3rem, 8vw, 5rem); }
   .onward a { color: var(--accent); text-decoration: none; }

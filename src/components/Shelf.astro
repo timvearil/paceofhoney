@@ -76,7 +76,7 @@ const shelf = others.slice(0, 2).map((s) => s);
   {next && (
     <noscript>
       <a class="onward" href={chapterHref(next, thread.data.id)}>
-        <p class="mono hint">следующая глава</p>
+        <p class="mono hint">следующая статья</p>
         <p class="title h3">{next.data.title}</p>
         <p class="mono go">читать дальше <span aria-hidden="true">→</span></p>
       </a>
@@ -90,12 +90,12 @@ const shelf = others.slice(0, 2).map((s) => s);
     больше нечего.
   */}
   <div class="finale" data-shelf-final hidden={Boolean(next)}>
-    <p class="mono hint">серия дочитана</p>
+    <p class="mono hint">журнал дочитан</p>
     {bridgeSeries && bridgeEntry ? (
       <>
         <p class="bridge text">
-          Вы прочли все доступные главы серии «{thread.data.title}».
-          Следующий журнал на полке: <span aria-hidden="true">{bridgeSeries.data.icon}</span>
+          Вы прочли все доступные статьи журнала «{thread.data.title}».
+          Следующий журнал на столике: <span aria-hidden="true">{bridgeSeries.data.icon}</span>
           «{bridgeSeries.data.title}» — {bridgeEntry.data.title}.
         </p>
         {/* Адрес новой нити: дальше читатель идёт ею, и номера глав
@@ -106,7 +106,7 @@ const shelf = others.slice(0, 2).map((s) => s);
       </>
     ) : (
       <p class="bridge text">
-        Вы прочли все доступные главы серии «{thread.data.title}».
+        Вы прочли все доступные статьи журнала «{thread.data.title}».
         Новые выходят по мере того, как пишутся.
       </p>
     )}
@@ -123,7 +123,7 @@ const shelf = others.slice(0, 2).map((s) => s);
             </p>
             <p class="about">{s.data.description}</p>
             <a class="mono open" href={`/series/${s.data.id}`}>
-              📋 оглавление серии
+              📋 оглавление журнала
             </a>
           </div>
         ))}
@@ -144,7 +144,7 @@ const shelf = others.slice(0, 2).map((s) => s);
     border-color: color-mix(in srgb, currentColor 25%, transparent);
   }
 
-  .hint { opacity: .45; }
+  .hint { opacity: var(--dim); }
 
   /* Запасная навигация для страниц без скриптов — см. <noscript> выше. */
   .onward { display: block; color: inherit; text-decoration: none; max-width: 40rem; }
@@ -168,7 +168,7 @@ const shelf = others.slice(0, 2).map((s) => s);
   .open { display: inline-block; margin-top: .75rem; color: var(--accent); text-decoration: none; }
   .open:hover { text-decoration: underline; text-underline-offset: .2em; }
 
-  .home { margin: clamp(3rem, 8vw, 5rem) 0 clamp(3rem, 8vw, 5rem); opacity: .5; }
+  .home { margin: clamp(3rem, 8vw, 5rem) 0 clamp(3rem, 8vw, 5rem); opacity: var(--dim); }
   .home a { color: inherit; text-decoration: none; }
   .home a:hover { opacity: 1; text-decoration: underline; text-underline-offset: .2em; }
 </style>

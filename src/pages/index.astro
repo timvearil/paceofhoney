@@ -10,6 +10,7 @@
  */
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Schema from '../components/Schema.astro';
 import Footer from '../components/Footer.astro';
 import Frame from '../components/Frame.astro';
 import SeriesCard from '../components/SeriesCard.astro';
@@ -39,6 +40,7 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
   description="Суверенный медиапроект о выходе из цифровой «Карусели»."
   image={passport?.hero_image?.src}
 >
+  <Schema slot="schema" home canonical="/" />
   <div class="container">
     <header class="hero">
       <h1 class="mark">Со скоростью мёда<span class="dot">.</span></h1>
@@ -84,17 +86,20 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
           ))}
         </div>
 
+        {/* Из ленты «свежее» ведём в указатель, а не в каталог журналов:
+            читатель здесь смотрит, что нового, и следующий его вопрос —
+            «а что ещё вышло», а не «какие тут бывают темы». */}
         {posts.length > latest.length && (
           <p class="more">
-            <a href="/series" class="link--right">Все сюжеты <span>→</span></a>
+            <a href="/posts" class="link--right">Все статьи <span>→</span></a>
           </p>
         )}
       </section>
     )}
 
     <section class="section section--lg" aria-labelledby="series-head">
-      <p class="mono index">03 / сериалы и сюжеты</p>
-      <h2 id="series-head" class="sr-only">Сериалы и сюжеты</h2>
+      <p class="mono index">03 / журналы</p>
+      <h2 id="series-head" class="sr-only">Журналы на столике</h2>
 
       {cards.length > 0 ? (
         <div class="grid">
@@ -108,7 +113,7 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
           ))}
         </div>
       ) : (
-        <p class="empty">Первые сериалы готовятся к выходу.</p>
+        <p class="empty">Первые журналы готовятся к выходу.</p>
       )}
     </section>
   </div>
@@ -118,7 +123,25 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
 
 <style>
   .hero { padding-top: clamp(2rem, 8vw, 5rem); }
-  .mark { max-width: 14ch; }
+  /*
+     Заголовок витрины ломался пополам, оставляя внизу одинокое «мёда.».
+     Виноват был не кегль, а ограничение в 14ch: «Со скоростью мёда.» —
+     18 знаков, то есть перенос назначался принудительно, даже когда места
+     хватало с запасом.
+
+     Теперь ширина не мешает, а кегль сам уступает: 8vw держит строку целой
+     примерно от 900 пикселей и выше, а на широких мониторах упирается
+     в общий потолок --h1-max и дальше не растёт.
+
+     Ниже 900 строка всё-таки переносится — и это нормально: там кегль уже
+     невелик, и две строки читаются как две строки, а не как обрубок.
+     `balance` в этом случае раскладывает их ровнее.
+  */
+  .mark {
+    max-width: 20ch;
+    font-size: clamp(var(--h1-min), 8vw, var(--h1-max));
+    text-wrap: balance;
+  }
   .dot { color: var(--accent); }
 
   .passport {
@@ -131,7 +154,7 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
 
   .shot { margin-top: clamp(2.5rem, 7vw, 4.5rem); }
 
-  .index { opacity: .45; margin-bottom: 1.5rem; }
+  .index { opacity: var(--dim); margin-bottom: 1.5rem; }
 
   .grid {
     display: grid; gap: 2.5rem;
@@ -140,7 +163,7 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
 
   .feed { border-bottom: 1px solid; border-color: color-mix(in srgb, currentColor 18%, transparent); }
 
-  .empty { opacity: .5; max-width: 34rem; }
+  .empty { opacity: var(--dim); max-width: 34rem; }
 
   .more { margin-top: 1.5rem; }
   .more a { color: var(--accent); text-decoration: none; }

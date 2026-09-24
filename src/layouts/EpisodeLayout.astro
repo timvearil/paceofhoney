@@ -18,6 +18,7 @@
  */
 
 import BaseLayout from './BaseLayout.astro';
+import Schema from '../components/Schema.astro';
 import SeriesPlate from '../components/SeriesPlate.astro';
 import Episode from '../components/Episode.astro';
 import Shelf from '../components/Shelf.astro';
@@ -48,12 +49,16 @@ const firstHref =
   updatedAt={d.updated}
   canonicalPath={canonicalHref(post)}
 >
+  <Schema slot="schema" post={post} thread={thread} canonical={canonicalHref(post)} />
+
   <SeriesPlate
     slot="plate"
     series={series}
     number={thread.number}
     total={thread.total}
     firstHref={firstHref}
+    prevHref={thread.prev ? chapterHref(thread.prev, series.data.id) : undefined}
+    nextHref={thread.next ? chapterHref(thread.next, series.data.id) : undefined}
   />
 
   <div class="container">
@@ -73,6 +78,14 @@ const firstHref =
   /* Между главами в потоке нужен воздух и видимая граница: иначе читатель
      не поймёт, что начался новый текст. Правило про соседство живёт здесь,
      а не в самой главе: глава про своих соседей ничего не знает. */
+  /* Прыжок стрелкой и любой переход по якорю останавливаются НИЖЕ шапки:
+     иначе заголовок главы уезжает под плашку, и читатель попадает сразу
+     в середину первого абзаца. Высоту шапки меряет chrome.js. */
+  #stream :global(.episode),
+  #stream :global([data-spacer]) {
+    scroll-margin-top: calc(var(--chrome-height, 4.5rem) + 1rem);
+  }
+
   #stream :global(.episode + .episode) {
     margin-top: clamp(4rem, 10vw, 7rem);
     padding-top: clamp(3rem, 8vw, 5rem);
