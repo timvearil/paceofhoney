@@ -234,7 +234,7 @@ check('адрес сменился и остался в своей нити',
   window.location.pathname, hrefOf(one.body));
 check('заголовок вкладки сменился', doc.title.includes('Со скоростью мёда'), true);
 check('плашка обновилась',
-  /Глава \d+ из \d+/.test(doc.querySelector('[data-plate-count]')?.textContent ?? ''), true);
+  /Статья \d+ из \d+/.test(doc.querySelector('[data-plate-count]')?.textContent ?? ''), true);
 check('canonical показывает один адрес текста, без серии',
   doc.querySelector('link[rel=canonical]')?.getAttribute('href'),
   `http://localhost${canonOf(one.body)}`);

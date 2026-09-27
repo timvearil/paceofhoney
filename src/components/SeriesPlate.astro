@@ -35,8 +35,12 @@ const s = series.data;
 
 <div class="plate mono" data-plate>
   <p class="where">
-    <span aria-hidden="true">{s.icon}</span>
-    <span class="name">Журнал «{s.title}»</span>
+    {/* Значок и название — одно целое: на узком экране строки столбика
+        делятся по смыслу, и значок не должен уезжать в свою собственную. */}
+    <span class="who">
+      <span aria-hidden="true">{s.icon}</span>
+      <span class="name">Журнал «{s.title}»</span>
+    </span>
     <span class="sep" aria-hidden="true">·</span>
     <span data-plate-count>Статья {number} из {total}</span>
   </p>
@@ -110,6 +114,7 @@ const s = series.data;
   }
 
   .where { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; }
+  .who { display: inline-flex; align-items: baseline; gap: .4rem; }
   .name { font-weight: 700; }
   .sep { opacity: .4; }
 

@@ -171,7 +171,10 @@ export function startReader() {
     if (canonical && d.canonical) {
       canonical.href = new URL(d.canonical, location.origin).href;
     }
-    if (plateCount) plateCount.textContent = `Глава ${d.number} из ${d.total}`;
+    // Слово то же, что на сервере: «статья», не «глава». Термин сменили
+    // 24.09, и эта строка осталась единственным местом, где жило старое —
+    // при прокрутке плашка переписывала себя обратно в «главу».
+    if (plateCount) plateCount.textContent = `Статья ${d.number} из ${d.total}`;
     aimSteps(d);
 
     // Читатель сместился — пересчитываем, что держать в памяти.
