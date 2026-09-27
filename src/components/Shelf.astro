@@ -58,8 +58,27 @@ for (const s of others) {
  * продолжение чтения. Читатель ещё не решил, браться ли за серию, и первая
  * глава может оказаться прочитанной. Оглавление честнее: видно, что внутри,
  * и видно, откуда начать.
+ *
+ * СКОЛЬКО ПОКАЗЫВАТЬ. Раньше стояло `others.slice(0, 2)` — первые два
+ * по порядку витрины. При шести журналах это значило, что «Созерцательный
+ * тревел», «Загородная жизнь» и «Философия жизни» (order 3, 4 и 5)
+ * не показывались ни разу ни на одной странице сайта: срез всегда отдавал
+ * одну и ту же пару. Заголовок «другие журналы на столике» при этом обещал
+ * весь столик. Нашлось на живом устройстве 27.09.
+ *
+ * Теперь показываются все оставшиеся. Полка стоит в конце непрерывной ленты:
+ * читатель добрался сюда, дочитав журнал целиком, и выбирать ему логично
+ * из всего, что есть.
+ *
+ * Предел на вырост. Шесть карточек читаются как список, двадцать — как
+ * стена, и мостик на следующий журнал в ней утонет. Поэтому потолок:
+ * сверх него полка показывает первые `LIMIT` и строку на столик, где лежат
+ * все с обложками. Пока журналов шесть, обрезка не срабатывает ни разу —
+ * правило лежит наготове и включится само.
  */
-const shelf = others.slice(0, 2).map((s) => s);
+const LIMIT = 8;
+const shelf = others.slice(0, LIMIT);
+const hidden = others.length - shelf.length;
 ---
 
 <section class="shelf" data-shelf aria-label="Что дальше">
@@ -128,6 +147,11 @@ const shelf = others.slice(0, 2).map((s) => s);
           </div>
         ))}
       </div>
+      {hidden > 0 && (
+        <p class="mono more">
+          <a href="/series">и ещё {hidden} на столике <span aria-hidden="true">→</span></a>
+        </p>
+      )}
     </div>
   )}
 
@@ -167,6 +191,11 @@ const shelf = others.slice(0, 2).map((s) => s);
   .about { margin-top: .4rem; font-size: var(--fs-sm); opacity: .7; line-height: 1.5; }
   .open { display: inline-block; margin-top: .75rem; color: var(--accent); text-decoration: none; }
   .open:hover { text-decoration: underline; text-underline-offset: .2em; }
+
+  /* Строка появляется, только когда журналов больше предела, — см. LIMIT. */
+  .more { margin-top: 1.5rem; }
+  .more a { color: var(--accent); text-decoration: none; }
+  .more a:hover { text-decoration: underline; text-underline-offset: .2em; }
 
   .home { margin: clamp(3rem, 8vw, 5rem) 0 clamp(3rem, 8vw, 5rem); opacity: var(--dim); }
   .home a { color: inherit; text-decoration: none; }
