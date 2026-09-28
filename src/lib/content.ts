@@ -58,6 +58,22 @@ export async function getPublishedSeries(): Promise<Series[]> {
   return series.sort((a, b) => a.data.order - b.data.order);
 }
 
+/**
+ * Каким порядком показывать список статей набора.
+ *
+ * Умолчание зависит от рода: у сериала сюжетный порядок, у подборки — от
+ * свежего, потому что связи между текстами нет и новое важнее старого.
+ * Файл набора может сказать иначе полем `order_by`.
+ *
+ * Исключение, ради которого поле и появилось, — «Разгон»: подборка, но
+ * читается хронологией. Там нет сквозного сюжета, зато есть расстояние
+ * между первой записью 2014 года и манифестом 2026-го, и оно исчезает,
+ * если читать от свежего.
+ */
+export function listOrder(series: Series): 'story' | 'fresh' {
+  return series.data.order_by ?? (series.data.kind === 'serial' ? 'story' : 'fresh');
+}
+
 /** Ведущая серия статьи: первая в списке. Она ведёт плашку и поток чтения. */
 export const leadSeriesId = (post: Post): string | null => post.data.series[0] ?? null;
 

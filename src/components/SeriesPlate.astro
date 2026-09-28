@@ -31,6 +31,20 @@ interface Props {
 
 const { series, number, total, firstHref, prevHref, nextHref } = Astro.props;
 const s = series.data;
+
+/*
+ * Номер статьи показываем только там, где он что-то значит.
+ *
+ * У сериала это место в сюжете: «Статья 3 из 7» говорит читателю, сколько
+ * он прочёл и сколько осталось. У подборки сквозного сюжета нет, и её
+ * страница номеров не выводит (так решено в ТЗ 3.2.0) — а плашка в чтении
+ * выводила, и одна и та же статья представлялась по-разному в двух местах.
+ *
+ * Слово «подборка» при этом в интерфейс не возвращаем: читателю незачем
+ * знать род набора, для него всё — журнал. Разница только в том, есть
+ * номер или нет.
+ */
+const numbered = s.kind === 'serial';
 ---
 
 <div class="plate mono" data-plate>
@@ -41,8 +55,12 @@ const s = series.data;
       <span aria-hidden="true">{s.icon}</span>
       <span class="name">Журнал «{s.title}»</span>
     </span>
-    <span class="sep" aria-hidden="true">·</span>
-    <span data-plate-count>Статья {number} из {total}</span>
+    {numbered && (
+      <>
+        <span class="sep" aria-hidden="true">·</span>
+        <span data-plate-count>Статья {number} из {total}</span>
+      </>
+    )}
   </p>
 
   <p class="steps">

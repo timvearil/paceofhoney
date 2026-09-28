@@ -15,7 +15,7 @@ import Schema from '../../components/Schema.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { Image } from 'astro:assets';
-import { getEpisodes, chapterHref, assertContentIsSound, croppedCover } from '../../lib/content';
+import { getEpisodes, chapterHref, assertContentIsSound, croppedCover, listOrder } from '../../lib/content';
 
 export const getStaticPaths = (async () => {
   await assertContentIsSound();
@@ -39,7 +39,15 @@ const { Content } = await render(entry);
  */
 const isSerial = s.kind === 'serial';
 const episodes = await getEpisodes(s.id);
-const listed = isSerial ? episodes : [...episodes].reverse();
+
+/*
+ * Порядок списка спрашиваем у набора, а не выводим из рода.
+ *
+ * Раньше здесь стояло «сериал — как есть, иначе задом наперёд». Для
+ * «Разгона» это неверно: подборка, но её смысл именно в хронологии.
+ * Умолчания не изменились, так что остальные пять наборов на месте.
+ */
+const listed = listOrder(entry) === 'story' ? episodes : [...episodes].reverse();
 
 const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <= 4 && (n < 12 || n > 14) ? 'статьи' : 'статей');
 ---

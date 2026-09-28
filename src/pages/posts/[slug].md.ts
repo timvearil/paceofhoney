@@ -68,7 +68,16 @@ export const GET: APIRoute = async ({ props }) => {
     const thread = await getThread(post, id, allSeries);
     if (!thread) continue;
     lines.push(
-      `Журнал «${thread.series.data.title}»: статья ${thread.number} из ${thread.total}` +
+      /*
+       * Номер — только у сериала. В подборке сквозного сюжета нет, и «статья
+       * 1 из 1» там не факт, а выдумка: завтра текстов станет девять, и номер
+       * сменится, ничего не сказав о самом тексте. Ссылка на следующий
+       * остаётся в обоих случаях — она про порядок чтения, а не про место
+       * в сюжете.
+       */
+      (thread.series.data.kind === 'serial'
+        ? `Журнал «${thread.series.data.title}»: статья ${thread.number} из ${thread.total}`
+        : `Журнал «${thread.series.data.title}»`) +
         (thread.next ? `, следующая — ${SITE}/posts/${thread.next.data.slug}.md` : ', последняя'),
     );
   }
