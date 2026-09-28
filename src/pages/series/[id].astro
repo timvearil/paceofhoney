@@ -15,7 +15,7 @@ import Schema from '../../components/Schema.astro';
 import Footer from '../../components/Footer.astro';
 import PostCard from '../../components/PostCard.astro';
 import { Image } from 'astro:assets';
-import { getEpisodes, chapterHref, assertContentIsSound } from '../../lib/content';
+import { getEpisodes, chapterHref, assertContentIsSound, croppedCover } from '../../lib/content';
 
 export const getStaticPaths = (async () => {
   await assertContentIsSound();
@@ -26,6 +26,9 @@ export const getStaticPaths = (async () => {
 
 const { entry } = Astro.props;
 const s = entry.data;
+
+/** Полоса 21:9, нарезанная заранее, — если её нарезали. */
+const wide = croppedCover(s.cover_image, 'wide');
 const { Content } = await render(entry);
 
 /*
@@ -62,10 +65,15 @@ const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <=
     {s.cover_image && (
       <figure class="cover-figure">
         <div class="cover" data-focus-frame>
+          {/*
+            Нарезанная полоса 21:9 вместо целого кадра со смещением.
+            Шапка грузится `eager`, то есть попадает прямо в LCP, а разница
+            здесь пятикратная: у «Философии жизни» было 932 КБ.
+          */}
           <Image
-            src={s.cover_image} alt={s.cover_alt ?? ''}
+            src={wide ?? s.cover_image} alt={s.cover_alt ?? ''}
             widths={[768, 1280, 1920]} sizes="(min-width: 64rem) 60rem, 100vw" loading="eager"
-            style={`object-position:${s.cover_position}`}
+            style={wide ? undefined : `object-position:${s.cover_position}`}
           />
         </div>
         {s.cover_caption && <figcaption class="mono">{s.cover_caption}</figcaption>}

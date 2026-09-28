@@ -8,7 +8,7 @@ kind: serial
 draft: false
 cover_image: ../_attachments/live-filosofy.jpg
 cover_alt: Мужчина и женщина стоят вместе на фоне развалин древнего города Мира
-cover_position: center 30%
+cover_position: center 45%
 ---
 
 Тексты о том, ради чего всё остальное. Подписка «Завтра», которая списывает

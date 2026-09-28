@@ -9,6 +9,7 @@
 
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
+import { croppedCover } from '../lib/content';
 
 interface Props {
   id: string;
@@ -29,6 +30,9 @@ interface Props {
 
 const { id, title, description, icon, cover, coverAlt, coverPosition = 'center', episodes, readHref } =
   Astro.props;
+
+/** Обложка, уже нарезанная под карточку 4:3, — если её нарезали. */
+const card = croppedCover(cover, 'card');
 
 /*
  * Карточка открывает чтение, а не оглавление.
@@ -70,9 +74,14 @@ const to = readHref ?? `/series/${id}`;
 
     {cover ? (
       <div class="shot" data-focus-frame>
-        <Image src={cover} alt={coverAlt ?? ''} widths={[480, 768, 1024]}
+        {/*
+          Нарезанной обложке смещение не нужно: она уже 4:3 и обрезана там,
+          где велел `cover_position`. Оригинал показываем со смещением,
+          как раньше, — на случай, если нарезки почему-то нет.
+        */}
+        <Image src={card ?? cover} alt={coverAlt ?? ''} widths={[480, 768, 1024]}
                sizes="(min-width: 64rem) 22rem, 90vw" loading="lazy"
-               style={`object-position:${coverPosition}`} />
+               style={card ? undefined : `object-position:${coverPosition}`} />
       </div>
     ) : (
       <div class="shot shot--empty" data-focus-frame aria-hidden="true">

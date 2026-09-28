@@ -14,6 +14,7 @@
  * Спецификация: 01_Spec/tz-paceofhoney-v2.md, разделы 1.3, 4.4
  */
 
+import type { ImageMetadata } from 'astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 
 export type Post = CollectionEntry<'posts'>;
@@ -399,4 +400,45 @@ export async function assertContentIsSound(): Promise<void> {
         '\n\nСборка остановлена намеренно.\n',
     );
   }
+}
+
+/* =========================================================================
+   Обложка, нарезанная под место показа
+
+   Обложка журнала живёт в двух формах: карточка витрины 4:3 и полоса шапки
+   21:9. Раньше обе получались обрезкой в браузере, то есть телефон скачивал
+   кадр целиком, а показывал из него четверть — у «Философии жизни» это почти
+   мегабайт ради полосы. Нарезку делает `scripts/sync-images.mjs`, здесь
+   остаётся найти готовый файл.
+
+   Ищем по имени: `live-filosofy.jpg` → `live-filosofy--wide.jpg`. Имя берётся
+   из `src` уже обработанного кадра, где к нему приписан хэш сборки, поэтому
+   отрезаем всё от первой точки. Имена кадров в проекте латиницей и без точек
+   внутри — за этим следит тот же скрипт, когда переносит их из архива.
+
+   Если нарезки нет — возвращаем `null`, и вызывающий показывает оригинал
+   со смещением, как раньше. Ни одна страница от этого не ломается.
+   ========================================================================= */
+
+const CROPPED = import.meta.glob<{ default: ImageMetadata }>(
+  '../content/_covers/*.{jpg,jpeg,png,webp}',
+  { eager: true },
+);
+
+/** Нарезанная обложка под форму показа, либо `null`, если её нет. */
+export function croppedCover(
+  cover: ImageMetadata | undefined,
+  shape: 'card' | 'wide',
+): ImageMetadata | null {
+  if (!cover) return null;
+
+  const file = decodeURIComponent(cover.src.split('?')[0]).split('/').pop() ?? '';
+  const stem = file.split('.')[0];
+  if (!stem) return null;
+
+  for (const [route, mod] of Object.entries(CROPPED)) {
+    const name = route.split('/').pop() ?? '';
+    if (name.startsWith(`${stem}--${shape}.`)) return mod.default;
+  }
+  return null;
 }

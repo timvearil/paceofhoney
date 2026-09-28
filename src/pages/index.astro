@@ -54,11 +54,22 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
 
     {passport?.hero_image && (
       <section class="section shot">
+        {/*
+          Соотношение задаётся только горизонтальному кадру.
+
+          Раньше здесь жёстко стояло 16:9 — при вертикальном кадре от него
+          осталась бы четверть высоты, вырезанная по центру. На снимке
+          со смолой это означало бы одну каплю без сруба и конопатки,
+          то есть без всего, что делает кадр понятным.
+
+          Без соотношения `Frame` сам узнаёт пропорции файла на сборке
+          и ставит вертикаль узкой колонкой по центру — целиком.
+        */}
         <Frame
           src={passport.hero_image}
           alt={passport.hero_alt ?? ''}
           caption={passport.hero_caption}
-          ratio="16 / 9"
+          {...(passport.hero_image.height > passport.hero_image.width ? {} : { ratio: '16 / 9' })}
           eager
         />
       </section>
@@ -152,7 +163,23 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data.title]));
   }
   .passport :global(p:not(:last-child)) { margin-bottom: .75em; }
 
-  .shot { margin-top: clamp(2.5rem, 7vw, 4.5rem); }
+  /*
+    Кадр держится той же вертикали, что и текст паспорта.
+
+    Вертикальный снимок приходит из `Frame` узкой колонкой по центру —
+    внутри статьи это верно, там колонка текста сама узкая. Но здесь секция
+    во всю ширину страницы, и кадр уезжал на середину экрана, оторвавшись
+    и от текста слева, и от собственной подписи, которая осталась у левого
+    края. Две вещи на разных вертикалях читаются как две разные мысли.
+
+    Поэтому блок ограничен шириной паспорта, а центрирование кадра снято:
+    текст, кадр и подпись стоят на одной линии слева.
+  */
+  .shot {
+    margin-top: clamp(2.5rem, 7vw, 4.5rem);
+    max-width: 38rem;
+  }
+  .shot :global(.shot--portrait) { margin-inline: 0; }
 
   .index { opacity: var(--dim); margin-bottom: 1.5rem; }
 

@@ -148,6 +148,271 @@ async function squeeze(from, to) {
   }
 }
 
+/* =========================================================================
+   Обложки журналов, нарезанные по месту показа
+
+   ЗАЧЕМ. Обложка показывается в двух формах: карточкой на витрине (4:3)
+   и полосой в шапке журнала (21:9). Обрезку до сих пор делал браузер —
+   `object-fit: cover` плюс `object-position` из `cover_position`. Выглядит
+   правильно, но означает, что телефон скачивает кадр целиком и показывает
+   из него четверть.
+
+   PageSpeed 28.09 поймал это на «Ироничной пасеке»: 166 КБ в карточке
+   размером с ладонь. У «Философии жизни» шапка тянула 932 КБ — и она
+   грузится `eager`, то есть прямо в LCP. Понижение качества тут не лечит:
+   даже на 50 оставалось 220 КБ, потому что дело не в сжатии, а в том, что
+   высота кадра втрое больше показанной.
+
+   КАК. Режем заранее, здесь, рядом с остальной подготовкой кадров: два
+   производных файла на обложку, точно в тех пропорциях, в которых её
+   покажут, и с тем же смещением, что задано в `cover_position`. Браузеру
+   остаётся показать готовое — `object-position` производным уже не нужен.
+
+   Проценты в `cover_position` считаются ровно так же, как их понимает CSS:
+   0% — окно прижато к верху кадра, 100% — к низу. Иначе подобранное глазом
+   значение поехало бы, и обрезка «оптимизации ради» испортила бы кадры.
+
+   Производные лежат отдельной папкой и коммитятся: на сервере этот скрипт
+   не работает (см. `CI` в `main`), там всё должно быть готовым. Если файла
+   почему-то нет, компоненты берут оригинал — сайт не ломается, просто
+   кадр снова тяжёлый.
+   ========================================================================= */
+
+/** Куда складываем нарезанное. Рядом с кадрами, но отдельной папкой. */
+const COVERS = path.join(ROOT, 'src/content/_covers');
+
+/** Что уже нарезано и из чего — чтобы не пережимать на каждом запуске. */
+const COVERS_FILE = path.join(COVERS, '.covers.json');
+
+/** Формы показа: имя производной и её пропорции. */
+const COVER_SHAPES = [
+  { suffix: 'card', ratio: 4 / 3 },
+  { suffix: 'wide', ratio: 21 / 9 },
+];
+
+/**
+ * Смещение окна из `cover_position` — доли от 0 до 1 по обеим осям.
+ *
+ * Пишется так же, как в CSS, и читается так же: сначала по горизонтали,
+ * потом по вертикали. `center 30%` → по ширине центр, по высоте 0.3;
+ * `30% 30%` → по обеим осям 0.3. Слова `left`, `center`, `right`, `top`
+ * и `bottom` тоже понимаем — автор вправе написать их, раз это CSS.
+ *
+ * Вторая ось нужна не для красоты: у «Пчелиного файрволла» стоит `30% 30%`,
+ * и обрезка только по высоте увела бы кадр вбок — ровно та ошибка, ради
+ * которой эти проценты когда-то и подбирались глазами.
+ */
+function coverOffset(value) {
+  const WORDS = { left: 0, top: 0, center: 0.5, centre: 0.5, right: 1, bottom: 1 };
+  const parts = String(value ?? '').trim().split(/\s+/).filter(Boolean);
+
+  const one = (token, fallback) => {
+    if (token === undefined) return fallback;
+    if (token in WORDS) return WORDS[token];
+    const m = /^(\d+(?:\.\d+)?)\s*%$/.exec(token);
+    return m ? Math.min(100, Math.max(0, Number(m[1]))) / 100 : fallback;
+  };
+
+  // Одно значение в CSS задаёт горизонталь, вертикаль остаётся посередине.
+  return { x: one(parts[0], 0.5), y: one(parts[1], 0.5) };
+}
+
+/** Имя производной: `live-filosofy.jpg` + `wide` → `live-filosofy--wide.jpg`. */
+function coverName(file, suffix) {
+  const ext = path.extname(file);
+  return `${path.basename(file, ext)}--${suffix}${ext}`;
+}
+
+/**
+ * Нарезать обложки журналов под обе формы показа.
+ *
+ * Пропускаем кадр, который и так почти нужной формы: если высота выше
+ * требуемой меньше чем на десятую часть, обрезка сэкономит единицы процентов,
+ * а лишний файл в репозитории останется навсегда.
+ */
+async function cropCovers(files) {
+  let done = {};
+  try {
+    done = JSON.parse(await fs.readFile(COVERS_FILE, 'utf8'));
+  } catch { /* первого запуска ещё не было */ }
+
+  await fs.mkdir(COVERS, { recursive: true });
+
+  let made = 0;
+  const fresh = {};
+  const sheet = [];   // что показать на контрольном листе
+  const blind = [];   // обложки, у которых процент не задан
+
+  for (const file of files.filter((f) => f.includes(`${path.sep}series${path.sep}`))) {
+    const text = await fs.readFile(file, 'utf8');
+    const cover = /^cover_image:\s*["']?(.+?)["']?\s*$/m.exec(text);
+    if (!cover) continue;
+
+    const source = path.join(TARGET, path.basename(cover[1]));
+    let meta;
+    try {
+      meta = await sharp(source).metadata();
+    } catch {
+      continue; // кадра ещё нет — о нём скажет общая проверка ниже
+    }
+
+    const told = /^cover_position:\s*["']?(.+?)["']?\s*$/m.exec(text)?.[1];
+    const position = told ?? 'center 50%';
+    const offset = coverOffset(position);
+    const stat = await fs.stat(source);
+    const stamp = `${stat.size}:${Math.round(stat.mtimeMs)}:${position}`;
+
+    const title = /^title:\s*["']?(.+?)["']?\s*$/m.exec(text)?.[1] ?? path.basename(file, '.md');
+    if (!told) blind.push(title);
+    sheet.push({ title, position: told ?? 'по умолчанию, центр', file: cover[1], source });
+
+    for (const { suffix, ratio } of COVER_SHAPES) {
+      // Исходник ужимаем по длинной стороне, дальше считаем от этого размера.
+      const scale = Math.min(1, MAX_SIDE / Math.max(meta.width, meta.height));
+      const fullWidth = Math.round(meta.width * scale);
+      const fullHeight = Math.round(meta.height * scale);
+
+      /*
+       * Наибольший прямоугольник нужной формы внутри кадра.
+       *
+       * Лишней бывает любая сторона. У вертикального снимка лишняя высота,
+       * у горизонтального под карточку 4:3 — ширина. Обе режем по своему
+       * проценту из `cover_position`, ровно как это сделал бы браузер.
+       */
+      const wide = fullWidth / fullHeight > ratio;
+      const width = wide ? Math.round(fullHeight * ratio) : fullWidth;
+      const height = wide ? fullHeight : Math.round(fullWidth / ratio);
+
+      // Обрезать меньше десятой части — не стоит лишнего файла в репозитории.
+      const gain = 1 - (width * height) / (fullWidth * fullHeight);
+      if (gain < 0.1) continue;
+
+      const out = path.join(COVERS, coverName(cover[1], suffix));
+      fresh[path.basename(out)] = stamp;
+
+      if (done[path.basename(out)] === stamp) {
+        try {
+          await fs.access(out);
+          continue; // уже нарезано из этого же исходника
+        } catch { /* файл потеряли — нарежем заново */ }
+      }
+
+      const left = Math.round((fullWidth - width) * offset.x);
+      const top = Math.round((fullHeight - height) * offset.y);
+      const buffer = await sharp(source)
+        .rotate()
+        .resize({ width: fullWidth, height: fullHeight })
+        .extract({ left, top, width, height })
+        .jpeg({ quality: QUALITY, mozjpeg: true })
+        .toBuffer();
+
+      const tmp = `${out}.tmp-${process.pid}`;
+      try {
+        await fs.writeFile(tmp, buffer);
+        await fs.rename(tmp, out);
+      } catch (e) {
+        await fs.rm(tmp, { force: true });
+        throw e;
+      }
+      made += 1;
+    }
+  }
+
+  // Производные обложек, которым больше нечего соответствовать, убираем:
+  // сменилась обложка журнала — старая нарезка осталась бы в репозитории.
+  for (const name of await fs.readdir(COVERS).catch(() => [])) {
+    if (name.startsWith('.') || fresh[name]) continue;
+    await fs.rm(path.join(COVERS, name), { force: true });
+  }
+
+  await fs.writeFile(COVERS_FILE, JSON.stringify(fresh, null, 2) + '\n', 'utf8');
+  if (made) console.log(`[картинки] обложек нарезано: ${made}`);
+
+  await coverSheet(sheet);
+
+  /*
+   * Обложка без `cover_position` режется вслепую — по центру.
+   *
+   * Сборку из-за этого не останавливаем: бывает, что кадр положили на пробу
+   * и центр устраивает. Но сказать надо, потому что молча срезанная макушка
+   * обнаруживается месяцем позже и только если посмотреть на витрину.
+   */
+  if (blind.length) {
+    console.warn(
+      `[картинки] режется по центру, процент не задан: ${blind.join(', ')}\n` +
+        '           Посмотрите контрольный лист и, если кадр просится выше\n' +
+        '           или ниже, добавьте в файл журнала cover_position: center NN%',
+    );
+  }
+}
+
+/**
+ * Контрольный лист: что увидит читатель.
+ *
+ * Обрезку задаёт один процент, а показывается она в двух формах сразу —
+ * держать обе в голове тяжело, а смотреть их на сайте значит обойти шесть
+ * страниц витрины и шесть шапок. Здесь всё сведено на одну картинку:
+ * строка на журнал, слева карточка, справа полоса, рядом название и процент.
+ *
+ * Важное правило, которое лист делает наглядным: **полоса 21:9 всегда лежит
+ * внутри карточки 4:3** при одном и том же проценте — это следует из того,
+ * что окна отсчитываются от одной доли. Значит проверять достаточно полосу:
+ * что попало в неё, попадёт и в карточку.
+ */
+async function coverSheet(items) {
+  if (!items.length) return;
+
+  const W = 900;          // ширина листа
+  const CARD = 380;       // ширина карточки на листе
+  const GAP = 12;
+  const cardH = Math.round((CARD * 3) / 4);
+  const wideH = Math.round((CARD * 9) / 21);
+  const rowH = cardH + 34;
+
+  const rows = [];
+  for (const it of items) {
+    const parts = [];
+    for (const { suffix, ratio } of COVER_SHAPES) {
+      const cut = path.join(COVERS, coverName(it.file, suffix));
+      const from = await fs.access(cut).then(() => cut, () => it.source);
+      parts.push(
+        await sharp(from)
+          .resize({
+            width: CARD,
+            height: suffix === 'card' ? cardH : wideH,
+            fit: 'cover',
+            position: 'centre',
+          })
+          .toBuffer(),
+      );
+    }
+    rows.push({ ...it, parts });
+  }
+
+  const H = rows.length * rowH + GAP;
+  const label = (text, y) =>
+    Buffer.from(
+      `<svg width="${W}" height="26"><text x="0" y="18" font-family="sans-serif" ` +
+        `font-size="15" fill="#111">${text.replace(/[<&]/g, '')}</text></svg>`,
+    );
+
+  const layers = [];
+  rows.forEach((r, i) => {
+    const y = i * rowH + GAP;
+    layers.push({ input: r.parts[0], left: 0, top: y });
+    layers.push({ input: r.parts[1], left: CARD + GAP, top: y + cardH - wideH });
+    layers.push({ input: label(`${r.title} — ${r.position}`), left: 0, top: y + cardH + 4 });
+  });
+
+  const out = path.join(COVERS, '_kontrolnyy-list.jpg');
+  await sharp({ create: { width: W, height: H, channels: 3, background: '#fff' } })
+    .composite(layers)
+    .jpeg({ quality: 86 })
+    .toFile(out);
+
+  console.log(`[картинки] контрольный лист обложек: ${path.relative(ROOT, out)}`);
+}
+
 /**
  * Прибрать кадры, положенные прямо в папку репозитория, минуя архив.
  *
@@ -320,6 +585,10 @@ async function main() {
   // Кадры могли положить прямо в папку репозитория, минуя архив. Это законный
   // путь, но тогда их никто не ужал — прибираем здесь, до всего остального.
   await tidyTarget();
+
+  // Обложки журналов режем под их формы показа — после того, как кадры
+  // прибраны, чтобы резать уже ужатый исходник, а не восьмимегабайтный.
+  await cropCovers(await contentFiles());
 
   if (!hasArchive) {
     console.warn(

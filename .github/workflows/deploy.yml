@@ -25,10 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Забрать код из репозитория
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Поставить Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           # Та же версия, что на машине автора: расхождения ловятся тяжело.
           node-version: '24'
@@ -40,8 +40,12 @@ jobs:
       - name: Собрать сайт
         run: npm run build
 
+      # Начиная с v4 это действие не кладёт в архив файлы, начинающиеся
+      # с точки. У нас таких в `dist` нет — проверено 28.09. Если когда-нибудь
+      # понадобится `.nojekyll`, помнить об этом: без него Pages, собранные
+      # не через Actions, прячут папки вроде `_astro`.
       - name: Передать готовый сайт в Pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
 
@@ -55,4 +59,4 @@ jobs:
     steps:
       - name: Публикация
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
