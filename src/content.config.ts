@@ -14,6 +14,33 @@
 
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { typography } from './plugins/remark-typography.mjs';
+
+/* ---------------------------------------------------------------------------
+   Типографика в полях, а не только в тексте
+
+   Автор набирает одинаково везде: дефис вместо тире, прямые кавычки вместо
+   ёлочек — так он писал тридцать лет, и переучиваться ради разметки незачем.
+   Тело статьи приводит в порядок `remark-typography`, но поля фронтматтера
+   до сих пор уезжали на сайт как написаны, и это было видно: в описаниях
+   журналов, в подписях к кадрам, в строке «кому» на странице журнала.
+
+   `typographic()` — тот же `z.string()`, только с правилом на выходе.
+   Правила берутся из общей функции: разойтись с телом статьи им негде.
+
+   Где не применяем: `id`, `slug`, `permalink`, пути к картинкам, адреса.
+   Там дефис — часть значения, а не знак препинания, и «исправление» сломало
+   бы ссылку.
+   --------------------------------------------------------------------------- */
+
+/**
+ * Строка, прошедшая типографику при загрузке контента.
+ *
+ * Длину проверяем до преобразования: `transform` возвращает уже не строку
+ * схемы, и `.min()` после него не существует. Поэтому минимум задаётся
+ * параметром, а не цепочкой.
+ */
+const typographic = (min = 0) => z.string().min(min).transform(typography);
 
 /** Латинский слаг: строчные буквы, цифры, дефис-разделитель. */
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -36,7 +63,7 @@ const posts = defineCollection({
   schema: ({ image }) =>
     z
       .object({
-        title: z.string().min(1),
+        title: typographic(1),
         slug: slugField,
         description: z
           .string()
@@ -60,8 +87,8 @@ const posts = defineCollection({
         series: z.array(z.string()).default([]),
 
         lead_image: image().optional(),
-        lead_caption: z.string().optional(),
-        lead_alt: z.string().optional(),
+        lead_caption: typographic().optional(),
+        lead_alt: typographic().optional(),
 
         // Дата публикации на сайте. По ней статья встаёт в ленту «свежее».
         date: z.coerce.date(),
@@ -143,11 +170,11 @@ const series = defineCollection({
   schema: ({ image }) =>
     z.object({
       id: slugField,
-      title: z.string().min(1),
-      description: z.string().min(1),
+      title: typographic(1),
+      description: typographic(1),
       icon: z.string().min(1),
       cover_image: image().optional(),
-      cover_alt: z.string().optional(),
+      cover_alt: typographic().optional(),
 
       /*
        * Подпись под обложкой серии — отдельно от `cover_alt`.
@@ -161,7 +188,7 @@ const series = defineCollection({
        * Показывается только в шапке серии: на витрине карточка и так
        * подписана названием и числом глав.
        */
-      cover_caption: z.string().optional(),
+      cover_caption: typographic().optional(),
 
       // Куда смотреть при обрезке обложки.
       //
@@ -184,6 +211,19 @@ const series = defineCollection({
       // Поле заведено заранее и по умолчанию не меняет поведения. Вопрос,
       // чем считать «Ироничную пасеку», пока открыт — но благодаря этому
       // полю решение не потребует править ни одной статьи, только файл серии.
+      /*
+       * Кому этот журнал и чего в нём нет.
+       *
+       * Описание отвечает на «о чём», а спрашивают другое: «подойдёт ли мне».
+       * Ответ на это и есть мостик между художественным текстом и запросом
+       * человека — или модели, которой нужно кого-то сюда направить.
+       *
+       * Вторая половина фразы важнее первой: сказать, чего здесь нет,
+       * полезнее, чем расхваливать. Тот, кто пришёл за инструкцией, уйдёт
+       * сразу и не будет разочарован потом.
+       */
+      audience: typographic().optional(),
+
       kind: z.enum(['serial', 'collection']).default('serial'),
 
       /*
@@ -218,8 +258,8 @@ const pages = defineCollection({
   loader: glob({ base: './src/content/pages', pattern: '**/*.md' }),
   schema: ({ image }) =>
     z.object({
-    title: z.string().min(1),
-    description: z.string().min(1),
+    title: typographic(1),
+    description: typographic(1),
 
     /*
      * Ведущий кадр — как у главы. «Манифест» и «О нас» читаются подряд
@@ -230,13 +270,27 @@ const pages = defineCollection({
      * и быть не должно.
      */
     lead_image: image().optional(),
-    lead_alt: z.string().optional(),
-    lead_caption: z.string().optional(),
+    lead_alt: typographic().optional(),
+    lead_caption: typographic().optional(),
     // Канонический адрес. Astro маршрутизирует по файлам, поэтому адрес
     // из метаданных разбирает один общий маршрут (ТЗ 4.3.4).
     permalink: z
       .string()
       .regex(/^\/[a-z0-9\-/]*$/, 'Адрес начинается с косой черты и пишется латиницей: "/about".'),
+
+    /*
+     * Словарь понятий — короткой формой, для машин.
+     *
+     * На странице определения развёрнуты: с оговорками, примерами и тем,
+     * какие слова наши, а какие чужие. Машине нужна выжимка — одно
+     * предложение на понятие, которое можно процитировать целиком.
+     * Дублирование намеренное: короткая форма пишется отдельно, а не
+     * выдирается из текста регулярным выражением, которое сломается
+     * на первой же правке абзаца.
+     */
+    terms: z
+      .array(z.object({ name: z.string().min(1), description: z.string().min(1) }))
+      .optional(),
     draft: z.boolean().default(false),
     updated: z.coerce.date().optional(),
     })
@@ -269,7 +323,7 @@ const footer = defineCollection({
   loader: glob({ base: './src/content/settings', pattern: 'footer.md' }),
   schema: ({ image }) =>
     z.object({
-      slogan: z.string().min(1),
+      slogan: typographic(1),
       copyright: z.string().min(1),
       // Цоколь: два подготовленных кадра под светлую и тёмную тему.
       // Монохром зашит в сами файлы, а не наводится фильтром (ТЗ 4.5.2).

@@ -28,7 +28,7 @@
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Footer from '../../components/Footer.astro';
-import { getPublishedPosts, getPublishedSeries, canonicalHref } from '../../lib/content';
+import { getPublishedPosts, getPublishedSeries, corpusHref } from '../../lib/content';
 
 // getPublishedPosts отдаёт новые сверху — здесь нужен обратный порядок.
 const posts = [...(await getPublishedPosts())].reverse();
@@ -56,9 +56,10 @@ const day = (d: Date) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 
         публикации.
       </p>
       <p class="lead text hint">
-        Статья открывается в своём журнале и дальше идёт подряд — по нему,
-        а не по всему сайту. Журналы каждой статьи перечислены в строке;
-        первый из них и ведёт чтение.
+        Отсюда статьи читаются подряд по всему сайту, а не по одному журналу:
+        дочитав одну, вы окажетесь в следующей по этому списку. Журналы,
+        в которые входит статья, перечислены в строке — в любой можно
+        свернуть и читать его своим порядком.
       </p>
     </header>
 
@@ -72,7 +73,7 @@ const day = (d: Date) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 
             .filter((p) => p.data.date.getFullYear() === year)
             .map((post) => (
               <li>
-                <a class="row" href={canonicalHref(post)}>
+                <a class="row" href={corpusHref(post)}>
                   <span class="mono when">{day(post.data.date)}</span>
                   <span class="body">
                     <span class="title">{post.data.title}</span>

@@ -18,6 +18,15 @@ interface Props {
    * в которую входит, — но текст один, и поисковику показываем один.
    */
   canonicalPath?: string;
+
+  /**
+   * Адрес markdown-двойника этой страницы, если он есть.
+   *
+   * Двойники мы делаем с самого начала, но узнать о них машина могла только
+   * из `robots.txt` и `llms.txt` — то есть догадавшись их прочитать. Одна
+   * строка в `<head>` говорит прямо: вот тот же текст без разметки.
+   */
+  markdownPath?: string;
 }
 
 const {
@@ -28,6 +37,7 @@ const {
   publishedAt,
   updatedAt,
   canonicalPath,
+  markdownPath,
 } = Astro.props;
 
 const SITE_NAME = 'Со скоростью мёда';
@@ -73,6 +83,9 @@ const fullTitle = title === SITE_NAME ? title : `${title} — ${SITE_NAME}`;
 <meta name="twitter:image" content={imageUrl} />
 
 <link rel="alternate" type="application/rss+xml" title={SITE_NAME} href="/rss.xml" />
+{markdownPath && (
+  <link rel="alternate" type="text/markdown" title="Эта статья без разметки" href={markdownPath} />
+)}
 
 {/*
   Выбор темы до первой отрисовки. Скрипт блокирующий и намеренно крошечный:

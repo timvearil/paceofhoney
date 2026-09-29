@@ -12,7 +12,7 @@
  */
 
 import type { Post, Series } from '../lib/content';
-import { chapterHref, getEpisodes } from '../lib/content';
+import { chapterHref, getEpisodes, CORPUS_ID } from '../lib/content';
 
 interface Props {
   next: Post | null;
@@ -22,6 +22,16 @@ interface Props {
 }
 
 const { next, thread, allSeries } = Astro.props;
+
+/*
+ * Сквозная нить кончается иначе, чем журнал.
+ *
+ * У журнала финал — приглашение в следующий: «вы прочли этот, вот соседний».
+ * У корпуса соседнего нет, дальше только сам столик. Поэтому мост здесь
+ * не строится, а текст говорит о прочитанном сайте, а не о журнале
+ * с несуществующим названием.
+ */
+const corpus = thread.data.id === CORPUS_ID;
 
 const others = allSeries.filter((s) => s.data.id !== thread.data.id);
 
@@ -38,11 +48,13 @@ const others = allSeries.filter((s) => s.data.id !== thread.data.id);
  * Серии, целиком уместившиеся в прочитанную, пропускаем: предлагать в них
  * нечего.
  */
-const readSlugs = new Set((await getEpisodes(thread.data.id)).map((p) => p.data.slug));
+const readSlugs = corpus
+  ? new Set<string>()
+  : new Set((await getEpisodes(thread.data.id)).map((p) => p.data.slug));
 
 let bridgeSeries = null;
 let bridgeEntry = null;
-for (const s of others) {
+for (const s of corpus ? [] : others) {
   const fresh = (await getEpisodes(s.data.id)).find((p) => !readSlugs.has(p.data.slug));
   if (fresh) {
     bridgeSeries = s;
@@ -109,8 +121,14 @@ const hidden = others.length - shelf.length;
     больше нечего.
   */}
   <div class="finale" data-shelf-final hidden={Boolean(next)}>
-    <p class="mono hint">журнал дочитан</p>
-    {bridgeSeries && bridgeEntry ? (
+    <p class="mono hint">{corpus ? 'прочитано всё' : 'журнал дочитан'}</p>
+    {corpus ? (
+      <p class="bridge text">
+        Вы прочли весь сайт — все статьи, какие на нём есть. Дальше они
+        никуда не денутся: журналы на столике ниже, и каждый читается
+        своим порядком. Новые выходят по мере того, как пишутся.
+      </p>
+    ) : bridgeSeries && bridgeEntry ? (
       <>
         <p class="bridge text">
           Вы прочли все доступные статьи журнала «{thread.data.title}».

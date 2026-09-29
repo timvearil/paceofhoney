@@ -48,6 +48,7 @@ const firstHref =
   publishedAt={d.date}
   updatedAt={d.updated}
   canonicalPath={canonicalHref(post)}
+  markdownPath={`${canonicalHref(post)}.md`}
 >
   <Schema slot="schema" post={post} thread={thread} canonical={canonicalHref(post)} />
 

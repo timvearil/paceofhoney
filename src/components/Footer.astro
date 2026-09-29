@@ -84,6 +84,24 @@ const Content = entry ? (await render(entry)).Content : null;
   .human { margin-top: 3rem; opacity: var(--dim); max-width: 42ch; line-height: 1.5; }
   .human :global(p) { margin: 0; }
 
+  /*
+     Ссылка в подвале — той же палитры, что и в тексте статей.
+
+     Текст подвала приходит из markdown, а правило `.post-content a` живёт
+     только в теле страниц — сюда оно не дотягивается, и ссылка на словарь
+     вышла браузерным синим. Та же история, что со ссылками в «О нас» 27.09:
+     стоит markdown-у появиться в новом месте, как оно всплывает снова.
+  */
+  .human :global(a) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .2em;
+    text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    transition: text-decoration-color var(--t-fast);
+  }
+  .human :global(a:hover) { text-decoration-color: var(--accent); }
+
   .legal {
     display: flex; flex-wrap: wrap; gap: .5rem 2rem; justify-content: space-between;
     margin-top: .75rem; padding-bottom: 1rem;

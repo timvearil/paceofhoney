@@ -411,5 +411,84 @@ if (threadId) {
   check('другие серии главы названы', named.length > 0, true);
 }
 
+/* =========================================================================
+   СКВОЗНАЯ НИТЬ — чтение всего сайта подряд (`P7-51`)
+
+   Проверяем не механику читалки — она общая и проверена выше, — а то, что
+   у второй нити свои соседи, свой счёт и свой финал, и что первая при этом
+   осталась нетронутой. Последнее важнее всего: сквозная нить добавлялась
+   к работающему механизму, и цена ошибки — сломанное чтение журналов.
+   ========================================================================= */
+
+console.log('\n-- сквозная нить: счёт и соседи по корпусу --');
+{
+  const all = fs
+    .readdirSync(path.join(DIST, 'all'))
+    .filter((n) => n.endsWith('.html'))
+    .map((n) => fs.readFileSync(path.join(DIST, 'all', n), 'utf8'));
+
+  check('страниц сквозной нити столько же, сколько статей',
+    all.length,
+    fs.readdirSync(path.join(DIST, 'posts')).filter((n) => n.endsWith('.html')).length);
+
+  const numbers = all.map((h) => Number(attr(h, 'data-number'))).sort((a, b) => a - b);
+  check('номера идут подряд от первого до последнего',
+    numbers.join(','),
+    Array.from({ length: all.length }, (_, i) => i + 1).join(','));
+
+  const totals = new Set(all.map((h) => attr(h, 'data-total')));
+  check('у всех один и тот же размер корпуса', totals.size, 1);
+
+  const first = all.find((h) => attr(h, 'data-number') === '1');
+  const last = all.find((h) => attr(h, 'data-number') === String(all.length));
+
+  /*
+   * Пустой атрибут Astro печатает без кавычек — `data-prev-href`, а не
+   * `data-prev-href=""`, — и `attr` его не находит, возвращая null. Это уже
+   * стоило одной ложной тревоги на проверке `alt` 24.09. Поэтому «пусто»
+   * здесь значит и то и другое.
+   */
+  const empty = (v) => v === null || v === '';
+  check('у первой нет предыдущей', empty(attr(first, 'data-prev-href')), true);
+  check('у последней нет следующей', empty(attr(last, 'data-next-href')), true);
+  check('следующая у первой — внутри сквозной нити',
+    attr(first, 'data-next-href').startsWith('/all/'), true);
+  check('фрагмент для подгрузки тоже сквозной',
+    attr(first, 'data-next').startsWith('/all/'), true);
+}
+
+console.log('\n-- сквозная нить: что видит читатель --');
+{
+  const first = fs
+    .readdirSync(path.join(DIST, 'all'))
+    .filter((n) => n.endsWith('.html'))
+    .map((n) => fs.readFileSync(path.join(DIST, 'all', n), 'utf8'))
+    .find((h) => attr(h, 'data-number') === '1');
+
+  const plate = first.match(/<p class="where"[^>]*>(.*?)<\/p>/s)?.[1] ?? '';
+  const plateText = plate.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  check('плашка не называет корпус журналом', /Журнал/.test(plateText), false);
+  check('плашка называет его «Все статьи»', /Все статьи/.test(plateText), true);
+  check('номер в плашке есть', /Статья 1 из \d+/.test(plateText), true);
+
+  const canon = canonOf(first);
+  check('канонический адрес — короткий, не сквозной', canon.startsWith('/posts/'), true);
+
+  const finale = first.match(/<div class="finale"[^>]*>(.*?)<\/div>/s)?.[1] ?? '';
+  check('финал говорит о сайте, а не о журнале', /весь сайт/.test(finale), true);
+  check('моста в следующий журнал в корпусе нет', /Следующий журнал/.test(finale), false);
+}
+
+console.log('\n-- журнальная нить не пострадала --');
+{
+  const lead = fs.readFileSync(fileOf('/posts/podpiska-zavtra'), 'utf8');
+  const plate = lead.match(/<p class="where"[^>]*>(.*?)<\/p>/s)?.[1] ?? '';
+  check('в журнале плашка по-прежнему со словом «Журнал»', /Журнал/.test(plate), true);
+  check('соседи журнальной нити остались журнальными',
+    attr(lead, 'data-next').startsWith('/all/'), false);
+  check('счёт журнала меньше корпуса',
+    Number(attr(lead, 'data-total')) < 20, true);
+}
+
 console.log(bad === 0 ? '\nВсё сошлось.\n' : `\nНе сошлось: ${bad}\n`);
 process.exit(bad === 0 ? 0 : 1);

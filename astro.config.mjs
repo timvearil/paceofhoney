@@ -43,12 +43,16 @@ export default defineConfig({
        *     серией. Её `canonical` указывает на короткий адрес, и класть её
        *     в карту значит спорить с самим собой: «вот страница, но настоящая
        *     она другая»;
+       *   · сквозная нить `/all/{slug}` — тот же текст, читаемый подряд
+       *     по всему сайту. Канонический адрес у него прежний, и в карте
+       *     ему делать нечего ровно по той же причине, что и боковой нити;
        *   · всё, что начинается с подчёркивания, — служебное по соглашению.
        */
       filter: (page) => {
         const path = new URL(page).pathname;
         if (path.includes('/partial')) return false;
         if (/^\/series\/[^/]+\/[^/]+/.test(path)) return false;
+        if (/^\/all\//.test(path)) return false;
         return !path.includes('/_');
       },
     }),
@@ -82,8 +86,11 @@ export default defineConfig({
       проверка искала «нет прямых кавычек» — и радовалась, вместо того
       чтобы искать «есть ёлочки».
     */
-    smartypants: false,
     processor: unified({
+      // Здесь же, а не в `markdown.smartypants`: в поле верхнего уровня
+      // настройка объявлена устаревшей и в следующей большой версии исчезнет,
+      // а вместе с ней вернулись бы английские лапки.
+      smartypants: false,
       remarkPlugins: [[remarkObsidian, { root: process.cwd() }], remarkDialogue, remarkTypography],
       // Иллюстрации внутри текста доводятся до вида ведущего кадра: подпись,
       // проявление цвета, размер под ширину колонки. Именно rehype, а не

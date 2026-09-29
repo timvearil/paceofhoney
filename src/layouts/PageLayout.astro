@@ -23,6 +23,7 @@ const { title, description, updated, image } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description} updatedAt={updated} image={image}>
+  <slot name="schema" slot="schema" />
   <article class="container page">
     <header class="head">
       <h1>{title}</h1>

@@ -1,0 +1,31 @@
+---
+/**
+ * Фрагмент статьи для бесшовного потока — сквозная нить.
+ *
+ * Отдаёт только саму статью, без шапки и подвала: скрипт читалки подтягивает
+ * этот кусок и вставляет под текущей. Отличие от близнецов в `/posts` и
+ * `/series` — только в том, по какой нити посчитаны номер и соседи.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import Episode from '../../../components/Episode.astro';
+import { getCorpus, getCorpusThread, getPublishedSeries } from '../../../lib/content';
+
+export const partial = true;
+
+export const getStaticPaths = (async () => {
+  const corpus = await getCorpus();
+  return corpus.map((post) => ({ params: { slug: post.data.slug }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const allSeries = await getPublishedSeries();
+const thread = (await getCorpusThread(post))!;
+---
+
+<Episode post={post} thread={thread} allSeries={allSeries}>
+  <Content />
+</Episode>

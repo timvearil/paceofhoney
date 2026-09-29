@@ -21,6 +21,7 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
 import { getCollection } from 'astro:content';
 import { getPublishedSeries, getThread } from '../../lib/content';
+import { typography } from '../../plugins/remark-typography.mjs';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -86,7 +87,15 @@ export const GET: APIRoute = async ({ props }) => {
   if (d.tags?.length) lines.push(`Метки: ${d.tags.join(', ')}`, '');
 
   lines.push('---', '');
-  lines.push(post.body.trim(), '');
+    /*
+   * Тело — через ту же типографику, что и страница.
+   *
+   * Двойник существует, чтобы машина прочла статью без разметки. Если
+   * в нём останутся дефисы и прямые кавычки, а на странице будут тире
+   * и ёлочки, цитата разойдётся с источником — и разойдётся у нас же,
+   * в пределах одного сайта. Текст один, значит и знаки одни.
+   */
+  lines.push(typography(post.body.trim()), '');
   lines.push('---', '');
   lines.push(`Источник: ${SITE}/posts/${d.slug}`);
   lines.push('Цитировать можно со ссылкой на источник.');

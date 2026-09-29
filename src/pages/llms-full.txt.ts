@@ -17,6 +17,7 @@
 
 import type { APIRoute } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
+import { typography } from '../plugins/remark-typography.mjs';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -55,7 +56,7 @@ function chapter(p: any, n: number, total: number, seriesTitle: string): string[
     out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
   }
 
-  out.push('', d.description, '', p.body.trim(), '');
+  out.push('', d.description, '', typography(p.body.trim()), '');
   return out;
 }
 

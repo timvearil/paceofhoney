@@ -9,6 +9,7 @@
 
 import type { APIRoute, GetStaticPaths } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
+import { typography } from '../plugins/remark-typography.mjs';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -41,7 +42,7 @@ export const GET: APIRoute = async ({ props }) => {
     } else {
       out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
     }
-    out.push('', d.description, '', p.body.trim(), '');
+    out.push('', d.description, '', typography(p.body.trim()), '');
   });
 
   return new Response(out.join('\n'), {

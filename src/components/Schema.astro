@@ -20,6 +20,7 @@
  */
 
 import type { Post, Series, Thread } from '../lib/content';
+import { CORPUS_ID, mentionedTerms } from '../lib/content';
 
 interface Props {
   /** Страница главы: статья и нить, которой её читают. */
@@ -29,18 +30,109 @@ interface Props {
   series?: Series;
   /** Витрина. */
   home?: boolean;
+  /**
+   * Словарь: список «термин — определение».
+   *
+   * Названное понятие делает сайт первоисточником, и `DefinedTermSet` —
+   * тот язык, на котором это можно сказать машине прямо: вот набор терминов,
+   * вот определения, вот кто их дал. Для трёх наших понятий это правда;
+   * для четырёх чужих в определении сказано, что слово не наше, — врать
+   * разметкой было бы худшим способом соврать, потому что её читают
+   * не глядя.
+   */
+  terms?: { name: string; description: string }[];
+
+  /**
+   * Статическая страница: «О нас», словарь и всё, что придёт после.
+   *
+   * До 29.09 у них не было разметки вовсе — ни типа, ни автора, ни связи
+   * с сайтом. Для страниц, куда агент идёт за ответом «кто это и чему тут
+   * верить», странно молчать именно там.
+   */
+  page?: { title: string; description: string; about?: boolean };
   canonical: string;
 }
 
-const { post, thread, series, home = false, canonical } = Astro.props;
+const { post, thread, series, home = false, terms, page, canonical } = Astro.props;
 
 const SITE = 'https://paceofhoney.me';
 const NAME = 'Со скоростью мёда';
 
+/*
+ * Права — машиночитаемо.
+ *
+ * «Цитировать можно со ссылкой на источник» написано человеческим языком
+ * в `robots.txt` и в `llms.txt`, и человек это поймёт. Модель, решающая,
+ * можно ли цитировать, читает разметку — а там об этом не было сказано
+ * ничего. Разница между «вроде можно» и «сказано, что можно».
+ *
+ * Полноценной лицензии вроде Creative Commons здесь нет намеренно: она
+ * задала бы условия, которых Тимур не выбирал. Сказано ровно то, что есть:
+ * доступ бесплатный, автор известен, цитирование со ссылкой разрешено.
+ */
+const RIGHTS = {
+  isAccessibleForFree: true,
+  usageInfo: `${SITE}/about`,
+  copyrightHolder: { '@id': `${SITE}/#tim` },
+  copyrightYear: 2026,
+};
+
+/*
+ * Внешние профили — `sameAs`, замыкание графа.
+ *
+ * Без этого авторы в разметке были людьми без единой внешней привязки,
+ * а домен — сайтом без истории: разбирающая сторона не могла связать
+ * `paceofhoney.me` ни с каналами, ни с архивом на Blogger и ski.ru.
+ *
+ * Два набора, и путать их нельзя: канал проекта — не человек, человек —
+ * не канал. Blogger отнесён к Тимуру намеренно: это другой блог с другим
+ * названием, предшественник, а не та же вещь.
+ *
+ * `sameAs` живёт только в разметке. Читатель её не видит и никуда по ней
+ * не уходит, поэтому решение не отправлять его на чужие площадки остаётся
+ * в силе.
+ *
+ * Список сверен 29.09.2026, каждая ссылка открыта и опознана. Перепроверять
+ * раз в полгода: мёртвая ссылка здесь хуже отсутствующей — её проверят
+ * и перестанут верить остальным. Полный справочник с пояснениями —
+ * `00_Reference/profili-i-ploshchadki.md`.
+ */
+const PROJECT_PROFILES = [
+  'https://dzen.ru/pace_of_honey',
+  'https://vk.ru/pace_of_honey',
+  'https://vk.ru/honey_stories',
+  'https://t.me/pace_of_honey',
+  'https://max.ru/channel_pace_of_honey',
+  'https://www.youtube.com/@pace_of_honey',
+  'https://vkvideo.ru/@pace_of_honey',
+];
+
+const TIM_PROFILES = [
+  'https://www.ski.ru/az/blogs/user/T1ms/',
+  'https://timvearil.blogspot.com',
+  'https://www.facebook.com/Timvearil',
+  'https://www.instagram.com/timvearil',
+  'https://vk.ru/timur_1972',
+];
+
+const VENERA_PROFILES = ['https://vk.ru/v.abzalilova'];
+
 /* Авторы — двое, и они постоянны: объявляем один раз, ссылаемся по `@id`. */
 const authors = [
-  { '@type': 'Person', '@id': `${SITE}/#tim`, name: 'Тимур', url: `${SITE}/about` },
-  { '@type': 'Person', '@id': `${SITE}/#venera`, name: 'Венера', url: `${SITE}/about` },
+  {
+    '@type': 'Person',
+    '@id': `${SITE}/#tim`,
+    name: 'Тимур',
+    url: `${SITE}/about`,
+    sameAs: TIM_PROFILES,
+  },
+  {
+    '@type': 'Person',
+    '@id': `${SITE}/#venera`,
+    name: 'Венера',
+    url: `${SITE}/about`,
+    sameAs: VENERA_PROFILES,
+  },
 ];
 
 const graph: Record<string, unknown>[] = [
@@ -54,6 +146,8 @@ const graph: Record<string, unknown>[] = [
       'Журнал о выходе из цифровой «Карусели»: пчеловодство, кибербезопасность ' +
       'через жизнь улья, финансовые аферы через приключения трутней.',
     publisher: { '@id': `${SITE}/#tim` },
+    sameAs: PROJECT_PROFILES,
+    ...RIGHTS,
   },
   ...authors,
   {
@@ -74,7 +168,22 @@ const graph: Record<string, unknown>[] = [
  * объекта в графе нет, ссылка висит в пустоту. Разбирающая сторона в лучшем
  * случае её проигнорирует, в худшем сочтёт разметку битой.
  */
-const described = series ?? thread?.series;
+/*
+ * Сквозная нить в графе не существует — и не должна.
+ *
+ * Читателю она журнал заменяет, но журналом не является: файла у неё нет,
+ * страницы `/series/all` нет, на витрине её нет. Разметка, объявившая её
+ * `CreativeWorkSeries`, утверждала бы, что такой журнал есть, и давала
+ * ссылку в пустоту — а это худший вид ошибки в разметке: проверяемый.
+ * Нашлось при проверке готовности к агентам 29.09, на двадцати страницах.
+ *
+ * Сама статья от этого не беднеет: её принадлежность журналам уже описана
+ * ведущей нитью на каноническом адресе.
+ */
+const described = (series ?? thread?.series)?.data.id === CORPUS_ID
+  ? undefined
+  : series ?? thread?.series;
+
 if (described) {
   graph.push({
     '@type': 'CreativeWorkSeries',
@@ -110,12 +219,32 @@ if (post) {
     author: authors.map((a) => ({ '@id': a['@id'] })),
     publisher: { '@id': `${SITE}/#tim` },
     isPartOf: { '@id': `${SITE}/#blog` },
+    ...RIGHTS,
   };
 
   if (d.tags?.length) article.keywords = d.tags.join(', ');
+
+  /*
+   * Понятия, которые статья употребляет, — ссылкой на словарь.
+   *
+   * Так связь «текст ↔ понятие» становится видна машине: спросив о термине,
+   * она найдёт не только определение, но и тексты, где он живёт. Это и есть
+   * разница между «мы придумали слово» и «мы им пользуемся».
+   */
+  const mentions = await mentionedTerms(post);
+  if (mentions.length) {
+    article.mentions = mentions.map((name) => ({
+      '@type': 'DefinedTerm',
+      '@id': `${SITE}/slovar#${encodeURIComponent(name.toLowerCase())}`,
+      name,
+      inDefinedTermSet: { '@id': `${SITE}/slovar#terms` },
+    }));
+  }
   if (d.lead_image?.src) article.image = new URL(d.lead_image.src, SITE).href;
 
-  if (thread) {
+  // Место статьи в журнале — только для настоящих журналов: у сквозной нити
+  // номер есть, но ссылаться ему не на что (см. `described` выше).
+  if (thread && thread.series.data.id !== CORPUS_ID) {
     article.isPartOf = [
       { '@id': `${SITE}/#blog` },
       { '@id': `${SITE}/series/${thread.series.data.id}#series` },
@@ -139,6 +268,39 @@ if (home) {
     url: `${SITE}/`,
     name: NAME,
     isPartOf: { '@id': `${SITE}/#website` },
+  });
+}
+
+if (page) {
+  graph.push({
+    // `AboutPage` — для страницы о самих авторах; остальным хватает `WebPage`.
+    '@type': page.about ? 'AboutPage' : 'WebPage',
+    '@id': `${SITE}${canonical}#page`,
+    url: `${SITE}${canonical}`,
+    name: page.title,
+    description: page.description,
+    inLanguage: 'ru-RU',
+    isPartOf: { '@id': `${SITE}/#website` },
+    author: authors.map((a) => ({ '@id': a['@id'] })),
+    ...RIGHTS,
+  });
+}
+
+if (terms?.length) {
+  const setId = `${SITE}${canonical}#terms`;
+  graph.push({
+    '@type': 'DefinedTermSet',
+    '@id': setId,
+    name: `Словарь проекта «${NAME}»`,
+    url: `${SITE}${canonical}`,
+    inLanguage: 'ru-RU',
+    hasDefinedTerm: terms.map((t) => ({
+      '@type': 'DefinedTerm',
+      '@id': `${SITE}${canonical}#${encodeURIComponent(t.name.toLowerCase())}`,
+      name: t.name,
+      description: t.description,
+      inDefinedTermSet: { '@id': setId },
+    })),
   });
 }
 

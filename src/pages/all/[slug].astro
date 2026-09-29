@@ -1,0 +1,38 @@
+---
+/**
+ * Страница статьи, читаемой сквозной нитью — весь сайт подряд.
+ *
+ * Тот же текст, что по адресу `/posts/{slug}`, но соседи у него другие:
+ * не следующая статья журнала, а следующая статья корпуса. Читатель, пришедший
+ * из указателя «Все статьи», дальше идёт по сайту, а не сворачивает в журнал
+ * первой же открытой статьи.
+ *
+ * Канонический адрес остаётся `/posts/{slug}` — его ставит `EpisodeLayout`.
+ * Поисковику этой ветки не видно: её нет в карте сайта, и дублей в индексе
+ * она не создаёт.
+ *
+ * Близнецы этого файла — `/posts/[slug].astro` (ведущая нить)
+ * и `/series/[id]/[slug].astro` (боковая). Разметка у всех троих одна,
+ * она живёт в `EpisodeLayout`.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import EpisodeLayout from '../../layouts/EpisodeLayout.astro';
+import { getCorpus, getCorpusThread, getPublishedSeries } from '../../lib/content';
+
+export const getStaticPaths = (async () => {
+  const corpus = await getCorpus();
+  return corpus.map((post) => ({ params: { slug: post.data.slug }, props: { post } }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const allSeries = await getPublishedSeries();
+const thread = (await getCorpusThread(post))!;
+---
+
+<EpisodeLayout post={post} thread={thread} allSeries={allSeries}>
+  <Content />
+</EpisodeLayout>

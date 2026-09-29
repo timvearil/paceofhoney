@@ -65,6 +65,10 @@ const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <=
       </p>
       <h1><span class="icon" aria-hidden="true">{s.icon}</span>{s.title}</h1>
       <p class="lead text">{s.description}</p>
+      {/* Кому этот журнал — прямым языком, сразу под описанием.
+          Отвечает на вопрос, который задают перед чтением, а не после. */}
+      {s.audience && <p class="audience text">{s.audience}</p>}
+
       {episodes.length > 0 && (
         <p class="mono count">{episodes.length} {word(episodes.length)}</p>
       )}
@@ -123,6 +127,14 @@ const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <=
   .index { opacity: var(--dim); margin-bottom: 1rem; }
   .icon { margin-right: .5rem; font-size: .75em; }
   .lead { margin-top: 1.25rem; max-width: 38rem; line-height: 1.6; opacity: .8; font-size: var(--fs-lg); }
+  .audience {
+    margin-top: 1rem;
+    max-width: 40rem;
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    opacity: var(--dim);
+  }
+
   .count { margin-top: .75rem; opacity: var(--dim); }
 
   /* Только геометрия: широкая полоса под шапкой. Проявление цвета и тёплый
