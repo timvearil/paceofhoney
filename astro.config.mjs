@@ -7,6 +7,7 @@ import { rehypeFigures } from './src/plugins/rehype-figures.mjs';
 import { remarkDialogue } from './src/plugins/remark-dialogue.mjs';
 import { remarkTypography } from './src/plugins/remark-typography.mjs';
 import images from './src/integrations/images.mjs';
+import checkOutput from './src/integrations/check-output.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
 const SITE = 'https://paceofhoney.me';
@@ -31,6 +32,13 @@ export default defineConfig({
     // Следит за архивом иллюстраций, пока идёт работа: новый кадр появляется
     // на странице сам, без перезапуска сервера.
     images(),
+
+    // Последняя проверка перед выкладкой: смотрит собранный HTML на следы
+    // несостоявшихся значений — `undefined`, `NaN`, `[object Object]`.
+    // Ошибки такого рода сборку не роняют сами по себе, и до 01.10 одна
+    // из них жила на сайте незамеченной.
+    checkOutput(),
+
     sitemap({
       /*
        * В карте сайта — только канонические адреса.

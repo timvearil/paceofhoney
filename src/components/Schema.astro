@@ -21,6 +21,7 @@
 
 import type { Post, Series, Thread } from '../lib/content';
 import { CORPUS_ID, mentionedTerms } from '../lib/content';
+import { getEntry } from 'astro:content';
 
 interface Props {
   /** Страница главы: статья и нить, которой её читают. */
@@ -49,7 +50,16 @@ interface Props {
    * с сайтом. Для страниц, куда агент идёт за ответом «кто это и чему тут
    * верить», странно молчать именно там.
    */
-  page?: { title: string; description: string; about?: boolean };
+  page?: {
+    title: string;
+    description: string;
+    about?: boolean;
+    /** Ведущий кадр страницы — на тех же правах, что кадр статьи. */
+    image?: { src: string };
+    alt?: string;
+    credit?: string;
+    date?: Date;
+  };
   canonical: string;
 }
 
@@ -116,6 +126,65 @@ const TIM_PROFILES = [
 ];
 
 const VENERA_PROFILES = ['https://vk.ru/v.abzalilova'];
+
+/*
+ * ФОТОГРАФИЯ КАК ОБЪЕКТ, А НЕ КАК АДРЕС ФАЙЛА.
+ *
+ * До 01.10 от ведущего кадра в графе жила одна строка — ссылка на картинку.
+ * Для машины это значило ровно ничего: файл есть, кто его снял и на каких
+ * условиях его можно брать — неизвестно.
+ *
+ * Естественным местом для этих сведений кажется EXIF — те самые данные
+ * камеры, выдержки и места съёмки. Проверено замером: до сайта не доезжает
+ * ни одного поля. Метаданные срезает первое же пересжатие в `sync-images`,
+ * а остатки — нарезка srcset в самом Astro; вернуть их настройкой нельзя,
+ * потому что срезы Astro делает сам. И это к лучшему по двум причинам:
+ * в EXIF лежат координаты дома и пасеки, а доказательством авторства он
+ * всё равно не служит — его дописывает любой редактор за два клика.
+ *
+ * Поэтому происхождение кадра говорится здесь, явно: автор — ссылкой
+ * на `Person`, у которого в графе тринадцать внешних профилей; лицензия —
+ * из настроек подвала; описание — из `lead_alt`, который схема требует
+ * у каждого кадра; дата — дата статьи.
+ *
+ * Исключения (`lead_credit`) ломают это по умолчанию намеренно: кадр
+ * с дорисовкой не записывается на нас, а чужой кадр не передаёт нам прав
+ * на него. Соврать разметкой — худший способ соврать: её читают не глядя.
+ */
+const AI_CREDIT = /^ai$/i;
+
+function imageObject(
+  image: { src: string } | undefined,
+  opts: { alt?: string; credit?: string; date?: Date; license?: string },
+) {
+  if (!image?.src) return undefined;
+
+  const node: Record<string, unknown> = {
+    '@type': 'ImageObject',
+    contentUrl: new URL(image.src, SITE).href,
+  };
+  if (opts.alt) node.description = opts.alt;
+  if (opts.date) node.dateCreated = opts.date.toISOString().slice(0, 10);
+
+  if (!opts.credit) {
+    // Обычный случай: сняли сами.
+    node.creator = { '@id': `${SITE}/#tim` };
+    node.copyrightHolder = { '@id': `${SITE}/#tim` };
+    if (opts.license) node.license = opts.license;
+  } else if (AI_CREDIT.test(opts.credit)) {
+    // В кадре дорисованы детали. Автором ставить человека нельзя,
+    // а лицензию объявлять не на что: прав на машинную работу у нас нет.
+    node.creditText = 'Детали кадра дорисованы генеративной моделью';
+  } else {
+    // Снимал кто-то другой: имя как есть, права остаются при нём.
+    node.creator = { '@type': 'Person', name: opts.credit };
+    node.creditText = opts.credit;
+  }
+  return node;
+}
+
+/* Лицензия на фотографии — из настроек подвала, одной строкой на весь сайт. */
+const PHOTO_LICENSE = (await getEntry('footer', 'footer'))?.data.photo_license;
 
 /* Авторы — двое, и они постоянны: объявляем один раз, ссылаемся по `@id`. */
 const authors = [
@@ -240,7 +309,13 @@ if (post) {
       inDefinedTermSet: { '@id': `${SITE}/slovar#terms` },
     }));
   }
-  if (d.lead_image?.src) article.image = new URL(d.lead_image.src, SITE).href;
+  const image = imageObject(d.lead_image, {
+    alt: d.lead_alt,
+    credit: d.lead_credit,
+    date: d.origin?.date ?? d.date,
+    license: PHOTO_LICENSE,
+  });
+  if (image) article.image = image;
 
   // Место статьи в журнале — только для настоящих журналов: у сквозной нити
   // номер есть, но ссылаться ему не на что (см. `described` выше).
@@ -272,6 +347,12 @@ if (home) {
 }
 
 if (page) {
+  const pageImage = imageObject(page.image, {
+    alt: page.alt,
+    credit: page.credit,
+    date: page.date,
+    license: PHOTO_LICENSE,
+  });
   graph.push({
     // `AboutPage` — для страницы о самих авторах; остальным хватает `WebPage`.
     '@type': page.about ? 'AboutPage' : 'WebPage',
@@ -282,6 +363,7 @@ if (page) {
     inLanguage: 'ru-RU',
     isPartOf: { '@id': `${SITE}/#website` },
     author: authors.map((a) => ({ '@id': a['@id'] })),
+    ...(pageImage ? { image: pageImage } : {}),
     ...RIGHTS,
   });
 }

@@ -1,6 +1,7 @@
 ---
 slogan: "Здесь время течёт со скоростью мёда."
 copyright: "© 2026 paceofhoney.me · Тимур & Венера"
+photo_license: "https://creativecommons.org/licenses/by-nc/4.0/"
 bookend_light: "../_attachments/bench-light.jpg"
 bookend_dark: "../_attachments/bench-dark.jpg"
 social_links:

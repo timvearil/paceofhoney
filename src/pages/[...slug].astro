@@ -50,6 +50,10 @@ const { Content } = await render(page);
       title: page.data.title,
       description: page.data.description,
       about: page.data.permalink === '/about',
+      image: page.data.lead_image,
+      alt: page.data.lead_alt,
+      credit: page.data.lead_credit,
+      date: page.data.updated,
     }}
     canonical={page.data.permalink}
   />
