@@ -5,77 +5,51 @@
 #
 # Карта проекта для агентов: /llms.txt
 # Полный корпус текстов:     /llms-full.txt
-# Markdown-двойник любой главы: добавьте .md к её адресу.
+# Markdown-двойник любой статьи: добавьте .md к её адресу.
 
-User-agent: *
-Allow: /
-
-# Служебные фрагменты, которые подгружает читалка. Это куски глав без
-# оболочки — для читателя они бессмысленны, для поисковика выглядят
-# дубликатом статьи.
-Disallow: /posts/*/partial
-Disallow: /series/*/*/partial
-Disallow: /all/*/partial
+# Все краулеры — одна группа, с одними правилами.
+#
+# Так нужно, а не просто короче. Краулер слушает ровно одну группу — ту, где
+# назван он сам, — и общую «User-agent: *» при этом не читает (RFC 9309).
+# До 06.10.2026 у каждого названного краулера была своя группа с одним
+# «Allow: /», и запрет служебных фрагментов, стоявший только в общей группе,
+# действовал на одного Googlebot. Яндекс, Bing и ИИ-краулеры видели
+# фрагменты как дубликаты статей.
+#
+# Внутри группы нет пустых строк намеренно: старые разборщики считают
+# пустую строку концом группы. Комментарии внутри группы разрешены.
 
 # --- ИИ-краулеры ---------------------------------------------------------
 # Разрешены намеренно. Большинство сайтов их сейчас закрывает; мы делаем
 # обратное: проект существует ради того, чтобы его читали, в том числе
 # через разговор с моделью.
-
 User-agent: GPTBot
-Allow: /
-
 User-agent: ChatGPT-User
-Allow: /
-
 User-agent: OAI-SearchBot
-Allow: /
-
 User-agent: ClaudeBot
-Allow: /
-
 User-agent: Claude-User
-Allow: /
-
 User-agent: Claude-SearchBot
-Allow: /
-
 User-agent: anthropic-ai
-Allow: /
-
 User-agent: PerplexityBot
-Allow: /
-
 User-agent: Perplexity-User
-Allow: /
-
 User-agent: Google-Extended
-Allow: /
-
 User-agent: Applebot-Extended
-Allow: /
-
 User-agent: CCBot
-Allow: /
-
 User-agent: Bytespider
-Allow: /
-
 User-agent: Amazonbot
-Allow: /
-
 User-agent: meta-externalagent
-Allow: /
-
 User-agent: YandexAdditional
-Allow: /
-
 # --- Поисковые -----------------------------------------------------------
-
 User-agent: YandexBot
-Allow: /
-
 User-agent: Bingbot
+# --- Все остальные, включая Googlebot -------------------------------------
+User-agent: *
 Allow: /
+# Служебные фрагменты, которые подгружает читалка. Это куски статей без
+# оболочки — для читателя они бессмысленны, для поисковика выглядят
+# дубликатом статьи.
+Disallow: /posts/*/partial
+Disallow: /series/*/*/partial
+Disallow: /all/*/partial
 
 Sitemap: https://paceofhoney.me/sitemap-index.xml
