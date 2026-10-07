@@ -1,0 +1,19 @@
+# Окончания строк: на диске — LF, как пишут Obsidian и скрипты сборки.
+#
+# ЗАЧЕМ. Git на машине Тимура выкладывает файлы с CRLF (core.autocrlf),
+# а Obsidian и scripts/sync-images.mjs пишут LF. После каждого открытия статьи
+# или запуска npm run images Git показывал файлы «изменёнными» без единого
+# изменения — и такой шум уходил в коммиты. В истории всё и так хранится с LF;
+# правило делает LF единственным вариантом и на диске (07.10.2026).
+* text=auto eol=lf
+
+# Кадры и шрифты — двоичные, их не трогать.
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.webp binary
+*.avif binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary

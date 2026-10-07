@@ -200,9 +200,19 @@ async function saveMap(map, seen) {
  * в одной таблице. Поэтому сравниваем по первому слову производителя:
  * если модель с него начинается, производителя не приписываем.
  */
+/*
+ * Строковое поле EXIF без мусора.
+ *
+ * Камеры добивают текст до фиксированной длины нулевыми байтами: Nikon
+ * пишет объектив «1 NIKKOR VR 10-100mm f/4-5.6» и следом десятки `\0`.
+ * Попав в паспорт кадров, нули делали его для Git двоичным файлом —
+ * изменения таблицы переставали показываться построчно (найдено 07.10.2026).
+ */
+const tag = (v) => (typeof v === 'string' ? v.replace(/\0/g, '').trim() : '');
+
 function camera(make, model) {
-  const a = (make ?? '').trim();
-  const b = (model ?? '').trim();
+  const a = tag(make);
+  const b = tag(model);
   if (!b) return a || undefined;
   if (!a) return b;
 
@@ -224,7 +234,7 @@ async function shotData(file) {
       // половина камер пишет «Canon» в оба поля, и склейка даёт
       // «Canon Canon EOS R6».
       camera: camera(Image.Make, Image.Model),
-      lens: Photo.LensModel || undefined,
+      lens: tag(Photo.LensModel) || undefined,
       shutter:
         typeof Photo.ExposureTime === 'number'
           ? Photo.ExposureTime >= 1
