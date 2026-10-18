@@ -26,6 +26,7 @@ import { canonicalHref, chapterHref, partialHref } from '../lib/content';
 import AlsoIn from './AlsoIn.astro';
 import Frame from './Frame.astro';
 import Origin from './Origin.astro';
+import Schema from './Schema.astro';
 import { postsWithVideo } from '../lib/videos';
 import { getEntry } from 'astro:content';
 
@@ -57,6 +58,16 @@ const Heading = top ? 'h1' : 'h2';
 /* Видео к статье — не в тексте, а строкой после него: клик посреди статьи
    уводит читателя на площадку, и назад он не возвращается (P4-19). */
 const hasVideo = (await postsWithVideo()).has(d.slug);
+
+/*
+ * Шапка страницы должна следовать за главой, которая перед глазами
+ * (аудит 17.10): описание, превью, ссылка на `.md`, машинная разметка.
+ * Всё нужное читалке лежит здесь готовым, как и остальные `data-*`.
+ * Разметку подгруженной главы держим в `<template>` — браузер хранит его,
+ * но не считает частью страницы, и двух «статей» в разметке не бывает.
+ * У первой главы разметка уже в шапке, ей шаблон не нужен.
+ */
+const ogImage = new URL(d.lead_image?.src ?? '/images/og-default.jpg', Astro.site).href;
 const videoNote = hasVideo ? (await getEntry('videoPage', 'video'))?.data.post_note : undefined;
 ---
 
@@ -74,7 +85,15 @@ const videoNote = hasVideo ? (await getEntry('videoPage', 'video'))?.data.post_n
   data-prev-slug={thread.prev?.data.slug ?? ''}
   data-next-href={thread.next ? chapterHref(thread.next, seriesId) : ''}
   data-next-slug={thread.next?.data.slug ?? ''}
+  data-description={d.description}
+  data-markdown={`${canonicalHref(post)}.md`}
+  data-og-image={ogImage}
 >
+  {!top && (
+    <template data-episode-ld>
+      <Schema post={post} thread={thread} canonical={canonicalHref(post)} />
+    </template>
+  )}
   <header class="head">
     <p class="mono over">
       Статья {thread.number} · {when}

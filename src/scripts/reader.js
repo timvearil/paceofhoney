@@ -55,6 +55,54 @@ export function startReader() {
   };
   const canonical = document.querySelector('link[rel="canonical"]');
 
+  /*
+   * Остальная шапка, которая обязана следовать за главой перед глазами:
+   * описание, превью, ссылка на `.md` и машинная разметка. До 18.10 читалка
+   * меняла только адрес, заголовок и canonical — агент, прочитавший страницу
+   * после прокрутки, видел адрес второй статьи и разметку первой (аудит 17.10).
+   */
+  const head = {
+    description: document.querySelector('meta[name="description"]'),
+    ogTitle: document.querySelector('meta[property="og:title"]'),
+    ogDescription: document.querySelector('meta[property="og:description"]'),
+    ogUrl: document.querySelector('meta[property="og:url"]'),
+    ogImage: document.querySelector('meta[property="og:image"]'),
+    twTitle: document.querySelector('meta[name="twitter:title"]'),
+    twDescription: document.querySelector('meta[name="twitter:description"]'),
+    twImage: document.querySelector('meta[name="twitter:image"]'),
+    markdown: document.querySelector('link[rel="alternate"][type="text/markdown"]'),
+    ld: document.querySelector('head script[type="application/ld+json"]'),
+  };
+  // Разметка первой главы уже в шапке — запоминаем её, чтобы вернуть
+  // при прокрутке обратно: у первой главы своего шаблона нет.
+  const firstLd = { slug: stream.querySelector('[data-episode]')?.dataset.slug, text: head.ld?.textContent };
+
+  const set = (el, attr, value) => { if (el && value) el.setAttribute(attr, value); };
+
+  /** Шапка страницы — под главу `el`. */
+  function syncHead(el) {
+    const d = el.dataset;
+    const full = `${d.title} — Со скоростью мёда`;
+    const url = d.canonical ? new URL(d.canonical, location.origin).href : '';
+
+    set(head.description, 'content', d.description);
+    set(head.ogTitle, 'content', full);
+    set(head.ogDescription, 'content', d.description);
+    set(head.ogUrl, 'content', url);
+    set(head.ogImage, 'content', d.ogImage);
+    set(head.twTitle, 'content', full);
+    set(head.twDescription, 'content', d.description);
+    set(head.twImage, 'content', d.ogImage);
+    set(head.markdown, 'href', d.markdown);
+
+    if (head.ld) {
+      const own = el.querySelector('template[data-episode-ld]')?.content
+        .querySelector('script[type="application/ld+json"]')?.textContent;
+      const text = own ?? (d.slug === firstLd.slug ? firstLd.text : null);
+      if (text) head.ld.textContent = text;
+    }
+  }
+
   const episodes = () => [...stream.querySelectorAll('[data-episode]')];
 
   /** Что грузить следом за этой главой. Пусто — нить дочитана. */
@@ -171,6 +219,7 @@ export function startReader() {
     if (canonical && d.canonical) {
       canonical.href = new URL(d.canonical, location.origin).href;
     }
+    syncHead(el);
     // Слово то же, что на сервере: «статья», не «глава». Термин сменили
     // 24.09, и эта строка осталась единственным местом, где жило старое —
     // при прокрутке плашка переписывала себя обратно в «главу».
