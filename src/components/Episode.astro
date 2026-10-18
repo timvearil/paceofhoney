@@ -26,6 +26,8 @@ import { canonicalHref, chapterHref, partialHref } from '../lib/content';
 import AlsoIn from './AlsoIn.astro';
 import Frame from './Frame.astro';
 import Origin from './Origin.astro';
+import { postsWithVideo } from '../lib/videos';
+import { getEntry } from 'astro:content';
 
 interface Props {
   post: Post;
@@ -51,6 +53,11 @@ const seriesId = thread.series.data.id;
 const shown = d.origin?.date ?? d.date;
 const when = shown.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 const Heading = top ? 'h1' : 'h2';
+
+/* Видео к статье — не в тексте, а строкой после него: клик посреди статьи
+   уводит читателя на площадку, и назад он не возвращается (P4-19). */
+const hasVideo = (await postsWithVideo()).has(d.slug);
+const videoNote = hasVideo ? (await getEntry('videoPage', 'video'))?.data.post_note : undefined;
 ---
 
 <article
@@ -91,6 +98,12 @@ const Heading = top ? 'h1' : 'h2';
       уже прочитав статью, и только если ему стало интересно. */}
   <Origin post={post} />
 
+  {hasVideo && (
+    <p class="video-note mono">
+      <a href={`/video#${d.slug}`}>{videoNote} <span aria-hidden="true">→</span></a>
+    </p>
+  )}
+
   {/* Прочие серии этой главы — кроме той, которой читатель уже идёт. */}
   <AlsoIn post={post} exclude={seriesId} all={allSeries} />
 </article>
@@ -121,4 +134,8 @@ const Heading = top ? 'h1' : 'h2';
   .shot :global(.shot--portrait) { margin-inline: 0; }
 
   .post-content { max-width: 40rem; margin-top: clamp(2rem, 5vw, 3rem); }
+
+  .video-note { margin-top: 1.5rem; max-width: 40rem; font-size: var(--fs-sm); }
+  .video-note a { color: var(--accent); text-decoration: none; }
+  .video-note a:hover { text-decoration: underline; text-underline-offset: .2em; }
 </style>

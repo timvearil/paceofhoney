@@ -1,0 +1,170 @@
+---
+/**
+ * «Видео к журналам» — `/video` (P4-19, решения Тимура 18.10).
+ *
+ * Фасады, а не плеер. Встроенный плеер отменил бы обещание «трекеров нет»
+ * и назначил бы читателю темп автора. Здесь на каждый ролик — свой кадр,
+ * подпись, две даты и ссылки на площадки. До клика — ни одного стороннего
+ * запроса; клик уводит на площадку, и страница честно предупреждает об этом.
+ *
+ * Разделы — журналы и «Разгон», только те, где есть ролики. Внутри журнала
+ * ролики к статье собраны под её названием, у группы якорь — слаг статьи:
+ * на него ведёт строка «к этой статье есть видео» в конце статьи.
+ *
+ * В меню страницы нет намеренно: видео — дополнение к текстам, а не главный
+ * раздел. Ведут сюда строки в статьях — как в «Словарь».
+ *
+ * ПОЧЕМУ ФАЙЛ НАЗВАН `[video].astro`. Страница строится, только когда
+ * есть хотя бы один опубликованный ролик. Обычный `video.astro` строился
+ * бы всегда — и пока все ролики черновики, на сайте висела бы пустая
+ * «Видео к журналам». Адрес тот же: `/video`.
+ */
+
+import type { GetStaticPaths } from 'astro';
+import { getEntry, render } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import Schema from '../components/Schema.astro';
+import Frame from '../components/Frame.astro';
+import { canonicalHref } from '../lib/content';
+import { PLATFORM_NAME, firstUrl, getVideos, isoDuration, videoLinks, videosBySeries } from '../lib/videos';
+
+export const getStaticPaths = (async () =>
+  (await getVideos()).length ? [{ params: { video: 'video' } }] : []) satisfies GetStaticPaths;
+
+const SITE = 'https://paceofhoney.me';
+
+/* Тексты страницы — в `src/content/settings/video.md`, правятся в Obsidian. */
+const settings = await getEntry('videoPage', 'video');
+if (!settings) throw new Error('Нет src/content/settings/video.md — тексты страницы «Видео к журналам».');
+const TITLE = settings.data.title;
+const DESCRIPTION = settings.data.description;
+const { Content: Intro } = await render(settings);
+
+const sections = await videosBySeries();
+
+/* Без «г.» на конце — как во всех датах сайта (см. Origin.astro). */
+const day = (d: Date) =>
+  d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).replace(/\s*г\.$/, '');
+
+/* Тексты описаний — из тела заметок, через тот же Markdown, что у статей. */
+const bodies = new Map<string, any>();
+for (const s of sections) for (const g of s.groups) for (const v of g.videos) {
+  bodies.set(v.id, (await render(v)).Content);
+}
+
+/*
+ * Разметка `VideoObject`. Главный адрес — первая выкладка: её дата что-то
+ * доказывает. Вторая площадка — в `sameAs`. Кадр — наш, с нашего домена.
+ */
+const graph = sections.flatMap((s) =>
+  s.groups.flatMap((g) =>
+    g.videos.map((v) => {
+      const d = v.data;
+      const other = videoLinks(v).map((l) => l.url).filter((u) => u !== firstUrl(v));
+      return {
+        '@type': 'VideoObject',
+        '@id': `${SITE}/video#${v.id}`,
+        name: d.title,
+        description: `${d.title}. Снято: ${d.shot}.`,
+        thumbnailUrl: `${SITE}${d.frame.src}`,
+        uploadDate: d.first.date.toISOString().slice(0, 10),
+        duration: isoDuration(d.length),
+        url: firstUrl(v),
+        ...(other.length ? { sameAs: other } : {}),
+        isPartOf: { '@id': `${SITE}/series/${s.series.data.id}` },
+        ...(g.post ? { about: { '@id': `${SITE}${canonicalHref(g.post)}` } } : {}),
+        inLanguage: 'ru',
+      };
+    }),
+  ),
+);
+const jsonld = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+---
+
+<PageLayout title={TITLE} description={DESCRIPTION}>
+  <Fragment slot="schema">
+    <Schema page={{ title: TITLE, description: DESCRIPTION }} canonical="/video" />
+    <script type="application/ld+json" set:html={jsonld} />
+  </Fragment>
+
+  <div class="intro"><Intro /></div>
+
+  {sections.map(({ series, groups }) => (
+    <section class="series" aria-labelledby={`s-${series.data.id}`}>
+      <h2 id={`s-${series.data.id}`}>
+        <a href={`/series/${series.data.id}`}>{series.data.title}</a>
+      </h2>
+
+      {groups.map((g) => (
+        <div class="group" id={g.post?.data.slug}>
+          {g.post && (
+            <p class="to-post mono">
+              к статье <a href={canonicalHref(g.post)}>«{g.post.data.title}»</a>
+            </p>
+          )}
+
+          {g.videos.map((v) => {
+            const d = v.data;
+            const links = videoLinks(v);
+            const Body = bodies.get(v.id);
+            return (
+              <article class="video" id={v.id}>
+                <a class="facade" href={links[0].url} rel="noopener" target="_blank"
+                   aria-label={`${d.title} — смотреть на ${links[0].name} (откроется на площадке)`}>
+                  <Frame src={d.frame} alt={d.frame_alt} />
+                  <span class="play mono" aria-hidden="true">▶ {d.length}</span>
+                </a>
+                <h3>{d.title}</h3>
+                <p class="dates mono">
+                  снято {d.shot} · выложено на {PLATFORM_NAME[d.first.platform]} {day(d.first.date)}
+                </p>
+                <div class="about"><Body /></div>
+                <p class="links mono">
+                  {links.map((l) => (
+                    <a href={l.url} rel="noopener" target="_blank">{l.name} <span aria-hidden="true">↗</span></a>
+                  ))}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      ))}
+    </section>
+  ))}
+</PageLayout>
+
+<style>
+  /* Второй абзац вступления — предупреждение о площадках: тише основного. */
+  .intro :global(p:last-child:not(:first-child)) { opacity: var(--dim); font-size: var(--fs-sm); }
+
+  .series { margin-top: clamp(2.5rem, 6vw, 4rem); }
+  .series h2 a { color: inherit; text-decoration: none; }
+  .series h2 a:hover { text-decoration: underline; text-underline-offset: .2em; }
+
+  .group { margin-top: clamp(1.5rem, 4vw, 2.5rem); scroll-margin-top: 6rem; }
+  .to-post { opacity: var(--dim); }
+  .to-post a { color: var(--accent); text-decoration: none; }
+
+  .video { margin-top: 1.5rem; scroll-margin-top: 6rem; }
+  .video + .video { margin-top: clamp(2rem, 5vw, 3rem); }
+
+  /* Фасад: тот же кадр, что у фотографий, плюс метка «▶ длительность».
+     Метка — текст, а не картинка-кнопка: никакого плеера она не обещает. */
+  .facade { position: relative; display: block; color: inherit; text-decoration: none; }
+  .play {
+    position: absolute; left: .75rem; bottom: .75rem;
+    padding: .25rem .6rem; border-radius: var(--radius);
+    /* Поверх фотографии — в обеих темах одинаково: тёмная плашка, светлый текст. */
+    background: color-mix(in srgb, var(--dark) 78%, transparent);
+    color: var(--light);
+    font-size: var(--fs-sm);
+  }
+  .facade:hover .play, .facade:focus-visible .play { color: var(--accent); }
+
+  .video h3 { margin-top: .9rem; }
+  .dates { margin-top: .35rem; opacity: var(--dim); font-size: var(--fs-sm); }
+  .about { margin-top: .6rem; }
+  .links { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: .6rem; }
+  .links a { color: var(--accent); text-decoration: none; }
+  .links a:hover { text-decoration: underline; text-underline-offset: .2em; }
+</style>

@@ -468,4 +468,110 @@ const passport = defineCollection({
     }),
 });
 
-export const collections = { posts, series, pages, menu, footer, passport };
+/* ---------------------------------------------------------------------------
+   Видео к журналам (P4-19)
+   ------------------------------------------------------------------------ */
+
+/*
+ * ОДНА ЗАМЕТКА — ОДИН РОЛИК. Лежат в `src/content/videos/`, правятся
+ * в Obsidian так же, как статьи. Из них собирается страница `/video`
+ * и строка «к этой статье есть видео» в конце статьи.
+ *
+ * Плеера на сайте нет и не будет: он отменяет обещание «трекеров нет».
+ * Ролик показывается фасадом — свой кадр, подпись, ссылки на площадки.
+ * Решения Тимура 18.10 — `02_Plan/video-na-sayte.md` в кухне.
+ *
+ * ДВЕ ДАТЫ, И ОБЕ НУЖНЫ. `shot` — когда снято, словами («лето 2013»):
+ * точной даты съёмки часто нет, и выдумывать её нельзя. `first` — где
+ * и когда ролик выложен впервые. Вторая дата — доказательство: её
+ * поставила площадка, а не мы. Для «Разгона» это то же, что снимок
+ * в веб-архиве для текста: ролик, выложенный в 2015-м, подтверждает
+ * события 2015-го. Перезалитый позже ролик этой силы не имеет.
+ */
+const PLATFORM = z.enum(['youtube', 'vk']);
+
+const videos = defineCollection({
+  loader: glob({ base: './src/content/videos', pattern: '**/*.md' }),
+  schema: ({ image }) =>
+    z
+      .object({
+        /** Подпись на сайте — словами ролика или статьи, без крючков под клик. */
+        title: typographic(1),
+
+        /** Журнал или подборка, в чьём разделе стоит ролик. */
+        series: z.string(),
+
+        /** Статья, к которой ролик относится. Нет — ролик стоит под журналом. */
+        post: slugField.optional(),
+
+        /** Свой кадр из ролика — не обложка площадки. */
+        frame: image(),
+        frame_alt: typographic(1),
+
+        /**
+         * Когда снято — словами, как известно: «11 октября 2015», «лето 2013».
+         * Можно и датой `2026-07-12`: YAML прочтёт её как дату, а здесь
+         * она станет словами — «12 июля 2026».
+         */
+        shot: z.preprocess(
+          (v) =>
+            v instanceof Date
+              ? v.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).replace(/\s*г\.$/, '')
+              : v,
+          typographic(1),
+        ),
+
+        /** Где и когда ролик выложен впервые. */
+        first: z.object({ platform: PLATFORM, date: z.coerce.date() }),
+
+        youtube: z.string().url().optional(),
+        vk: z.string().url().optional(),
+
+        /** Длительность «м:сс» или «ч:мм:сс» — как пишет площадка. */
+        /*
+         * Без кавычек YAML иногда читает «1:34» как число в шестидесятеричном
+         * счёте — 94. Тогда возвращаем ему вид «м:сс», а не роняем сборку.
+         */
+        length: z.preprocess(
+          (v) => {
+            if (typeof v !== 'number') return v;
+            const h = Math.floor(v / 3600), m = Math.floor((v % 3600) / 60), s = v % 60;
+            const ss = String(s).padStart(2, '0');
+            return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+          },
+          z.string().regex(/^(\d+:)?\d{1,2}:\d{2}$/, 'Длительность пишется как на площадке: «1:34» или «1:02:15».'),
+        ),
+
+        /** Порядок внутри журнала, если дата первой выкладки его не решает. */
+        order: z.number().int().optional(),
+
+        draft: z.boolean().default(false),
+      })
+      .refine((d) => d.youtube || d.vk, {
+        message: 'У ролика нет ни одной ссылки: нужна хотя бы одна — youtube или vk.',
+        path: ['youtube'],
+      })
+      .refine((d) => !!d[d.first.platform], {
+        message:
+          'Первая выкладка указана на площадке, ссылки на которую нет. ' +
+          'Дата первой выкладки — доказательство, без ссылки её не проверить.',
+        path: ['first'],
+      }),
+});
+
+/*
+ * Тексты страницы «Видео к журналам» — заголовок, описание, вступление
+ * и строка в конце статьи. Отдельной заметкой, чтобы править их в Obsidian,
+ * а не в коде страницы.
+ */
+const videoPage = defineCollection({
+  loader: glob({ base: './src/content/settings', pattern: 'video.md' }),
+  schema: z.object({
+    title: typographic(1),
+    description: typographic(1),
+    /** Строка-ссылка в конце статьи, к которой есть видео. */
+    post_note: typographic(1),
+  }),
+});
+
+export const collections = { posts, series, pages, menu, footer, passport, videos, videoPage };

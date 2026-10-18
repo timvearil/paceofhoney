@@ -733,7 +733,7 @@ async function checkNumbering(files) {
 
 /** Все файлы контента, где могут встретиться ссылки на картинки. */
 async function contentFiles() {
-  const dirs = ['posts', 'pages', 'series', 'settings'].map((d) =>
+  const dirs = ['posts', 'pages', 'series', 'settings', 'videos'].map((d) =>
     path.join(ROOT, 'src/content', d),
   );
   const out = [];
@@ -761,7 +761,7 @@ async function contentFiles() {
  * соответствий.
  *
  * Остальные две формы — обычная картинка `![](../_attachments/кадр.jpg)`
- * и метаданные (`lead_image`, `cover_image`, `bookend_*`) — содержат путь,
+ * и метаданные (`lead_image`, `cover_image`, `bookend_*`, `frame` у роликов) — содержат путь,
  * который Astro открывает буквально, никакой карты не читая. Значит имя там
  * должно быть уже латинским, тем самым, под которым файл лёг в репозиторий.
  * Русское имя обрушило бы сборку сообщением «файл не найден», и автор искал
@@ -781,7 +781,7 @@ function mentionedImages(text) {
     const n = path.basename(m[1].trim());
     if (IMAGE_EXT.test(n)) found.set(n, 'literal');
   }
-  for (const m of text.matchAll(/^\s*\w*(?:image|art|cover|bookend\w*):\s*["']?([^"'\n]+)/gim)) {
+  for (const m of text.matchAll(/^\s*\w*(?:image|art|cover|frame|bookend\w*):\s*["']?([^"'\n]+)/gim)) {
     const n = path.basename(m[1].trim());
     if (IMAGE_EXT.test(n)) found.set(n, 'literal');
   }
