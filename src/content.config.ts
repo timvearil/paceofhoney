@@ -571,6 +571,8 @@ const videoPage = defineCollection({
     description: typographic(1),
     /** Строка-ссылка в конце статьи, к которой есть видео. */
     post_note: typographic(1),
+    /** Ссылка в шапке журнала, у которого есть ролики. */
+    series_note: typographic(1),
   }),
 });
 

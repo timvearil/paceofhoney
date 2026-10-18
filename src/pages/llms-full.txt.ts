@@ -18,6 +18,7 @@
 import type { APIRoute } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
 import { typography } from '../plugins/remark-typography.mjs';
+import { videoCorpusLine, videosForCorpus } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -36,7 +37,7 @@ const header = [
 ];
 
 /** Один текст со своей шапкой: откуда он и где живёт. */
-function chapter(p: any, n: number, total: number, seriesTitle: string): string[] {
+function chapter(p: any, n: number, total: number, seriesTitle: string, videos: string[] = []): string[] {
   const d = p.data;
   const out = [
     `### Статья ${n} из ${total}: ${d.title}`,
@@ -56,6 +57,8 @@ function chapter(p: any, n: number, total: number, seriesTitle: string): string[
   } else {
     out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
   }
+  // Видео к статье — рядом с датами: дата его выкладки тоже свидетельство.
+  for (const line of videos) out.push(`Видео к статье: ${line}`);
 
   out.push('', d.description, '', typography(p.body.trim()), '');
   return out;
@@ -63,6 +66,7 @@ function chapter(p: any, n: number, total: number, seriesTitle: string): string[
 
 export const GET: APIRoute = async () => {
   const series = await getPublishedSeries();
+  const { byPost, bySeriesOnly } = await videosForCorpus();
 
   const parts: { id: string; title: string; text: string }[] = [];
   for (const s of series) {
@@ -74,9 +78,14 @@ export const GET: APIRoute = async () => {
       '',
       s.data.description,
       '',
+      ...(bySeriesOnly.get(s.data.id) ?? []).map((v) => `Видео к журналу: ${videoCorpusLine(v)}`),
+      ...(bySeriesOnly.has(s.data.id) ? [''] : []),
     ];
     episodes.forEach((p, i) =>
-      lines.push(...chapter(p, i + 1, episodes.length, s.data.title)),
+      lines.push(
+        ...chapter(p, i + 1, episodes.length, s.data.title,
+          (byPost.get(p.data.slug) ?? []).map((v) => videoCorpusLine(v))),
+      ),
     );
     parts.push({ id: s.data.id, title: s.data.title, text: lines.join('\n') });
   }

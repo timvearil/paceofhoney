@@ -10,6 +10,7 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
 import { typography } from '../plugins/remark-typography.mjs';
+import { videoCorpusLine, videosForCorpus } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -21,6 +22,7 @@ export const getStaticPaths = (async () => {
 export const GET: APIRoute = async ({ props }) => {
   const s = (props as any).series;
   const episodes = await getEpisodes(s.data.id);
+  const { byPost, bySeriesOnly } = await videosForCorpus();
 
   const out = [
     `# ${s.data.title} — полный текст журнала`,
@@ -30,6 +32,8 @@ export const GET: APIRoute = async ({ props }) => {
     `Журнал на сайте: ${SITE}/series/${s.data.id}`,
     'Тексты сделаны людьми. Цитировать можно со ссылкой на источник.',
     '',
+    ...(bySeriesOnly.get(s.data.id) ?? []).map((v) => `Видео к журналу: ${videoCorpusLine(v)}`),
+    ...(bySeriesOnly.has(s.data.id) ? [''] : []),
   ];
 
   episodes.forEach((p, i) => {
@@ -42,6 +46,7 @@ export const GET: APIRoute = async ({ props }) => {
     } else {
       out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
     }
+    for (const v of byPost.get(d.slug) ?? []) out.push(`Видео к статье: ${videoCorpusLine(v)}`);
     out.push('', d.description, '', typography(p.body.trim()), '');
   });
 

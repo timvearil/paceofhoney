@@ -35,7 +35,13 @@ const SITE = 'https://paceofhoney.me';
 
 /* Тексты страницы — в `src/content/settings/video.md`, правятся в Obsidian. */
 const settings = await getEntry('videoPage', 'video');
-if (!settings) throw new Error('Нет src/content/settings/video.md — тексты страницы «Видео к журналам».');
+if (!settings) {
+  throw new Error(
+    'Не найдены тексты страницы «Видео к журналам» (src/content/settings/video.md). ' +
+      'Если файл на месте — стенд держит старый кеш контента: остановите npm run dev, ' +
+      'удалите node_modules/.astro и .astro/data-store.json и запустите снова.',
+  );
+}
 const TITLE = settings.data.title;
 const DESCRIPTION = settings.data.description;
 const { Content: Intro } = await render(settings);

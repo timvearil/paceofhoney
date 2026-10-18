@@ -9,7 +9,8 @@
  */
 
 import type { GetStaticPaths } from 'astro';
-import { getCollection, render } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
+import { getVideos } from '../../lib/videos';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Schema from '../../components/Schema.astro';
 import Footer from '../../components/Footer.astro';
@@ -49,6 +50,11 @@ const episodes = await getEpisodes(s.id);
  */
 const listed = listOrder(entry) === 'story' ? episodes : [...episodes].reverse();
 
+/* Видео к журналу — строкой в шапке, рядом со счётом статей (P4-19).
+   Ведёт на раздел журнала на странице «Видео к журналам». */
+const hasVideo = (await getVideos()).some((v) => v.data.series === s.id);
+const seriesNote = hasVideo ? (await getEntry('videoPage', 'video'))?.data.series_note : undefined;
+
 const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <= 4 && (n < 12 || n > 14) ? 'статьи' : 'статей');
 ---
 
@@ -70,7 +76,10 @@ const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <=
       {s.audience && <p class="audience text">{s.audience}</p>}
 
       {episodes.length > 0 && (
-        <p class="mono count">{episodes.length} {word(episodes.length)}</p>
+        <p class="mono count">
+          {episodes.length} {word(episodes.length)}
+          {seriesNote && <> · <a href={`/video#s-${s.id}`}>{seriesNote}</a></>}
+        </p>
       )}
     </header>
 
@@ -136,6 +145,8 @@ const word = (n: number) => (n === 1 ? 'статья' : n % 10 >= 2 && n % 10 <=
   }
 
   .count { margin-top: .75rem; opacity: var(--dim); }
+  .count a { color: var(--accent); text-decoration: none; }
+  .count a:hover { text-decoration: underline; text-underline-offset: .2em; }
 
   /* Только геометрия: широкая полоса под шапкой. Проявление цвета и тёплый
      свет — общие правила [data-focus-frame] в tokens.css. */

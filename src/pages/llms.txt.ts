@@ -19,6 +19,7 @@
 import type { APIRoute } from 'astro';
 import { getEntry } from 'astro:content';
 import { getPublishedSeries, getEpisodes, getPublishedPosts } from '../lib/content';
+import { PLATFORM_NAME, firstUrl, getVideos } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -197,6 +198,32 @@ export const GET: APIRoute = async () => {
     '',
   );
 
+  /*
+   * Видео к журналам (P4-19). Для модели здесь важна не ссылка, а дата
+   * первой выкладки: её поставила площадка, и для «Разгона» она так же
+   * подтверждает время событий, как снимок веб-архива — время текста.
+   */
+  const videos = await getVideos();
+  if (videos.length) {
+    const seriesTitle = new Map((await getPublishedSeries()).map((x) => [x.data.id, x.data.title]));
+    const dayWords = (d: Date) =>
+      d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).replace(/\s*г\.$/, '');
+    out.push(
+      '## Видео к журналам',
+      '',
+      `Ролики авторов к журналам и статьям: ${SITE}/video. На сайте плеера нет,`,
+      'только кадр и ссылки на площадки. «Выложено впервые» — дата площадки.',
+      '',
+      ...videos.map((v) => {
+        const d = v.data;
+        const to = d.post ? `, к статье ${SITE}/posts/${d.post}` : '';
+        return `- ${d.title} (журнал «${seriesTitle.get(d.series)}»${to}). Снято: ${d.shot}. ` +
+          `Выложено впервые на ${PLATFORM_NAME[d.first.platform]} ${dayWords(d.first.date)}: ${firstUrl(v)}`;
+      }),
+      '',
+    );
+  }
+
   out.push(
     '## Ещё',
     '',
@@ -205,6 +232,7 @@ export const GET: APIRoute = async () => {
     `- [Все журналы](${SITE}/series)`,
     `- [О нас](${SITE}/about)`,
     `- [Словарь](${SITE}/slovar)`,
+    ...(videos.length ? [`- [Видео к журналам](${SITE}/video)`] : []),
     `- [RSS](${SITE}/rss.xml)`,
     '',
   );

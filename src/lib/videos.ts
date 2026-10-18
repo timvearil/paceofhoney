@@ -117,3 +117,30 @@ export async function videosBySeries(): Promise<{ series: Series; groups: { post
   }
   return result;
 }
+
+/**
+ * Строка о ролике для машинных файлов (`llms-full.txt` и части по журналам).
+ *
+ * Дата первой выкладки — в том же виде, что даты статей там же (ГГГГ-ММ-ДД):
+ * её поставила площадка, и для модели это тот же род доказательства,
+ * что снимок в веб-архиве.
+ */
+export function videoCorpusLine(v: Video): string {
+  const d = v.data;
+  return `${d.title} — снято: ${d.shot}; выложено впервые на ${PLATFORM_NAME[d.first.platform]} ` +
+    `${d.first.date.toISOString().slice(0, 10)}: ${firstUrl(v)}`;
+}
+
+/** Ролики, сгруппированные для корпуса: по статье и по журналу (без статьи). */
+export async function videosForCorpus() {
+  const videos = await getVideos();
+  const byPost = new Map<string, Video[]>();
+  const bySeriesOnly = new Map<string, Video[]>();
+  for (const v of videos) {
+    const key = v.data.post;
+    const map = key ? byPost : bySeriesOnly;
+    const k = key ?? v.data.series;
+    map.set(k, [...(map.get(k) ?? []), v]);
+  }
+  return { byPost, bySeriesOnly };
+}
