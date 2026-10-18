@@ -37,7 +37,7 @@ draft: false
 
 **Написать письмо:** [timvearil+honey@gmail.com](mailto:timvearil+honey@gmail.com). Для длинного и личного. Отвечаем не сразу - со скоростью мёда, как и обещано.
 
-**Поговорить при всех:** в комментариях под постами в [Telegram](https://t.me/pace_of_honey) и [MAX](https://max.ru/channel_pace_of_honey). Там же выходят анонсы новых статей - полные тексты живут только здесь.
+**Поговорить при всех:** в комментариях под постами в [Telegram](https://t.me/pace_of_honey) и [MAX](https://max.ru/channel_pace_of_honey). Там же выходят анонсы новых статей - полные тексты выходят здесь первыми.
 
 **Читать без алгоритма:** [RSS](/rss.xml). Новые статьи приходят сами.
 
