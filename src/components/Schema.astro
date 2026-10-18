@@ -60,10 +60,16 @@ interface Props {
     credit?: string;
     date?: Date;
   };
+  /**
+   * Каталог: «Все статьи», «Журналы». Элементы — в том порядке, в каком
+   * их видит читатель на странице: разметка не должна рассказывать
+   * другую историю, чем сама страница (аудит 17.10).
+   */
+  list?: { name: string; description: string; items: { url: string; name: string }[] };
   canonical: string;
 }
 
-const { post, thread, series, home = false, terms, page, canonical } = Astro.props;
+const { post, thread, series, home = false, terms, page, list, canonical } = Astro.props;
 
 const SITE = 'https://paceofhoney.me';
 const NAME = 'Со скоростью мёда';
@@ -367,6 +373,28 @@ if (page) {
     author: authors.map((a) => ({ '@id': a['@id'] })),
     ...(pageImage ? { image: pageImage } : {}),
     ...RIGHTS,
+  });
+}
+
+if (list) {
+  graph.push({
+    '@type': 'CollectionPage',
+    '@id': `${SITE}${canonical}#page`,
+    url: `${SITE}${canonical}`,
+    name: list.name,
+    description: list.description,
+    inLanguage: 'ru-RU',
+    isPartOf: { '@id': `${SITE}/#website` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: list.items.length,
+      itemListElement: list.items.map((it, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${SITE}${it.url}`,
+        name: it.name,
+      })),
+    },
   });
 }
 

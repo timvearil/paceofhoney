@@ -28,6 +28,7 @@
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Footer from '../../components/Footer.astro';
+import Schema from '../../components/Schema.astro';
 import { getPublishedPosts, getPublishedSeries, corpusHref } from '../../lib/content';
 
 // getPublishedPosts отдаёт новые сверху — здесь нужен обратный порядок.
@@ -40,12 +41,23 @@ const titleOf = new Map(series.map((s) => [s.data.id, s.data]));
 const years = [...new Set(posts.map((p) => p.data.date.getFullYear()))].sort((a, b) => a - b);
 
 const day = (d: Date) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+
+const TITLE = 'Все статьи';
+const DESCRIPTION =
+  'Полный указатель статей сайта по датам появления: заголовок, журналы, год первой публикации для архивных текстов.';
 ---
 
-<BaseLayout
-  title="Все статьи"
-  description="Полный указатель статей сайта по датам появления: заголовок, журналы, год первой публикации для архивных текстов."
->
+<BaseLayout title={TITLE} description={DESCRIPTION}>
+  {/* Список в разметке — в том же порядке, что на странице; адреса — канонические. */}
+  <Schema
+    slot="schema"
+    list={{
+      name: TITLE,
+      description: DESCRIPTION,
+      items: posts.map((p) => ({ url: `/posts/${p.data.slug}`, name: p.data.title })),
+    }}
+    canonical="/posts"
+  />
   <div class="container">
     <header class="head">
       <p class="mono index">03 / все статьи</p>

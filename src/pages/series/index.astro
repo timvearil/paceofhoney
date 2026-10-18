@@ -9,6 +9,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Footer from '../../components/Footer.astro';
 import SeriesCard from '../../components/SeriesCard.astro';
+import Schema from '../../components/Schema.astro';
 import { getSeriesCards } from '../../lib/content';
 
 // Карточка ведёт сразу в чтение, поэтому ей нужен адрес первой главы нити.
@@ -16,12 +17,23 @@ const cards = await getSeriesCards();
 
 const serials = cards.filter((c) => c.data.kind === 'serial');
 const collections = cards.filter((c) => c.data.kind === 'collection');
+
+const TITLE = 'Журналы';
+const DESCRIPTION =
+  'Все журналы проекта: сквозные сюжеты, которые читаются подряд, и тематические — без общей линии.';
 ---
 
-<BaseLayout
-  title="Журналы"
-  description="Все журналы проекта: сквозные сюжеты, которые читаются подряд, и тематические — без общей линии."
->
+<BaseLayout title={TITLE} description={DESCRIPTION}>
+  {/* Порядок — как на странице: сначала журналы-сюжеты, потом подборки. */}
+  <Schema
+    slot="schema"
+    list={{
+      name: TITLE,
+      description: DESCRIPTION,
+      items: [...serials, ...collections].map((c) => ({ url: `/series/${c.data.id}`, name: c.data.title })),
+    }}
+    canonical="/series"
+  />
   <div class="container catalogue">
     <header class="head">
       <p class="mono index">02 / журналы</p>

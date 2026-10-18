@@ -9,9 +9,12 @@ import { remarkTypography } from './src/plugins/remark-typography.mjs';
 import images from './src/integrations/images.mjs';
 import checkOutput from './src/integrations/check-output.mjs';
 import mdImageLinks from './src/integrations/md-image-links.mjs';
+import { lastmodMap } from './src/integrations/lastmod.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
 const SITE = 'https://paceofhoney.me';
+
+const LASTMOD = lastmodMap(process.cwd());
 
 export default defineConfig({
   site: SITE,
@@ -67,6 +70,13 @@ export default defineConfig({
         if (/^\/series\/[^/]+\/[^/]+/.test(path)) return false;
         if (/^\/all\//.test(path)) return false;
         return !path.includes('/_');
+      },
+
+      // Честная дата изменения из самих статей — src/integrations/lastmod.mjs.
+      serialize(item) {
+        const path = new URL(item.url).pathname.replace(/\/$/, '') || '/';
+        const day = LASTMOD.get(path);
+        return day ? { ...item, lastmod: day } : item;
       },
     }),
   ],
