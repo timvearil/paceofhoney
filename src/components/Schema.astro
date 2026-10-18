@@ -41,7 +41,7 @@ interface Props {
    * разметкой было бы худшим способом соврать, потому что её читают
    * не глядя.
    */
-  terms?: { name: string; description: string }[];
+  terms?: { name: string; description: string; anchor: string }[];
 
   /**
    * Статическая страница: «О нас», словарь и всё, что придёт после.
@@ -283,7 +283,9 @@ if (post) {
     headline: d.title,
     description: d.description,
     inLanguage: 'ru-RU',
-    datePublished: (o?.date ?? d.date).toISOString(),
+    // Текст «из стола» впервые опубликован здесь; когда написан — `dateCreated`.
+    datePublished: (o && !o.unpublished ? o.date : d.date).toISOString(),
+    ...(o?.unpublished ? { dateCreated: o.date.toISOString().slice(0, 10) } : {}),
     dateModified: (d.updated ?? d.date).toISOString(),
     author: authors.map((a) => ({ '@id': a['@id'] })),
     publisher: { '@id': `${SITE}/#tim` },
@@ -302,9 +304,9 @@ if (post) {
    */
   const mentions = await mentionedTerms(post);
   if (mentions.length) {
-    article.mentions = mentions.map((name) => ({
+    article.mentions = mentions.map(({ name, anchor }) => ({
       '@type': 'DefinedTerm',
-      '@id': `${SITE}/slovar#${encodeURIComponent(name.toLowerCase())}`,
+      '@id': `${SITE}/slovar#${anchor}`,
       name,
       inDefinedTermSet: { '@id': `${SITE}/slovar#terms` },
     }));
@@ -378,7 +380,7 @@ if (terms?.length) {
     inLanguage: 'ru-RU',
     hasDefinedTerm: terms.map((t) => ({
       '@type': 'DefinedTerm',
-      '@id': `${SITE}${canonical}#${encodeURIComponent(t.name.toLowerCase())}`,
+      '@id': `${SITE}${canonical}#${t.anchor}`,
       name: t.name,
       description: t.description,
       inDefinedTermSet: { '@id': setId },

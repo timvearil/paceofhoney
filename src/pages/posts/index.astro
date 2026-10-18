@@ -85,7 +85,7 @@ const day = (d: Date) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 
                       })}
                       {post.data.origin && (
                         <span class="mark mark--archive">
-                          впервые {post.data.origin.date.getFullYear()}
+                          {post.data.origin.unpublished ? 'написано' : 'впервые'} {post.data.origin.date.getFullYear()}
                         </span>
                       )}
                     </span>

@@ -389,7 +389,18 @@ const pages = defineCollection({
      * на первой же правке абзаца.
      */
     terms: z
-      .array(z.object({ name: z.string().min(1), description: z.string().min(1) }))
+      .array(
+        z.object({
+          name: z.string().min(1),
+          description: z.string().min(1),
+          /*
+           * Якорь термина на странице — тот же, что в `<span id="…">` текста.
+           * Из него строятся адреса терминов в разметке: раньше они шли
+           * из названия (`#slow%20tech`) и не вели к определению (аудит 17.10).
+           */
+          anchor: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Якорь термина — латиницей через дефис, как id в тексте словаря.'),
+        }),
+      )
       .optional(),
     draft: z.boolean().default(false),
     updated: z.coerce.date().optional(),

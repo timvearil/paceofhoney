@@ -22,6 +22,7 @@ import type { APIRoute, GetStaticPaths } from 'astro';
 import { getCollection } from 'astro:content';
 import { getPublishedSeries, getThread } from '../../lib/content';
 import { typography } from '../../plugins/remark-typography.mjs';
+import { imageMark, mdImages } from '../../lib/md-images';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -52,12 +53,25 @@ export const GET: APIRoute = async ({ props }) => {
       rewritten: 'написан заново о тех же событиях',
     }[d.origin.state as 'original' | 'edited' | 'rewritten'];
 
-    lines.push(`Впервые опубликовано: ${asDate(d.origin.date)}`);
-    if (d.origin.source) lines.push(`Площадка первой публикации: ${d.origin.source}`);
-    if (d.origin.url) lines.push(`Оригинал: ${d.origin.url}`);
-    if (d.origin.archive) lines.push(`Снимок в веб-архиве: ${d.origin.archive}`);
-    lines.push(`Состояние текста: ${state}`);
-    lines.push(`Перенесено на этот сайт: ${asDate(d.date)}`);
+    /*
+     * Текст «из стола» нигде не публиковался: его дата — дата написания,
+     * а первая публикация — здесь. Писать «Впервые опубликовано: 2017»
+     * значило бы выдать дату написания за публикацию (аудит 17.10).
+     */
+    if (d.origin.unpublished) {
+      lines.push(`Написано: ${asDate(d.origin.date)} (до этого сайта нигде не публиковалось)`);
+      if (d.origin.url) lines.push(`Оригинал файла: ${d.origin.url}`);
+      if (d.origin.proof) lines.push(`Самое раннее подтверждение возраста: версия файла от ${asDate(d.origin.proof)}`);
+      lines.push(`Состояние текста: ${state}`);
+      lines.push(`Впервые опубликовано: ${asDate(d.date)}, на этом сайте`);
+    } else {
+      lines.push(`Впервые опубликовано: ${asDate(d.origin.date)}`);
+      if (d.origin.source) lines.push(`Площадка первой публикации: ${d.origin.source}`);
+      if (d.origin.url) lines.push(`Оригинал: ${d.origin.url}`);
+      if (d.origin.archive) lines.push(`Снимок в веб-архиве: ${d.origin.archive}`);
+      lines.push(`Состояние текста: ${state}`);
+      lines.push(`Перенесено на этот сайт: ${asDate(d.date)}`);
+    }
     lines.push('');
   } else {
     lines.push(`Опубликовано: ${asDate(d.date)}`, '');
@@ -95,7 +109,14 @@ export const GET: APIRoute = async ({ props }) => {
    * и ёлочки, цитата разойдётся с источником — и разойдётся у нас же,
    * в пределах одного сайта. Текст один, значит и знаки одни.
    */
-  lines.push(typography(post.body.trim()), '');
+  // Обложка — первой, как на странице: «версия статьи с медиа» без неё неполна.
+  if (d.lead_image) {
+    lines.push(`![${d.lead_alt ?? ''}](${imageMark(d.lead_image.src.split('/').pop()!.replace(/\.[^.]+\.(\w+)(\?.*)?$/, '.$1'))})`);
+    if (d.lead_caption) lines.push(`Подпись: ${d.lead_caption}`);
+    lines.push('');
+  }
+  // Кадры — обычной разметкой со ссылкой, а не обсидиановским `![[…]]`.
+  lines.push(typography(mdImages(post.body.trim())), '');
   lines.push('---', '');
   lines.push(`Источник: ${SITE}/posts/${d.slug}`);
   lines.push('Цитировать можно со ссылкой на источник.');

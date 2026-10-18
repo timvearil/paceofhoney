@@ -18,6 +18,7 @@
 import type { APIRoute } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
 import { typography } from '../plugins/remark-typography.mjs';
+import { mdImages } from '../lib/md-images';
 import { videoCorpusLine, videosForCorpus } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
@@ -37,7 +38,7 @@ const header = [
 ];
 
 /** Один текст со своей шапкой: откуда он и где живёт. */
-function chapter(p: any, n: number, total: number, seriesTitle: string, videos: string[] = []): string[] {
+async function chapter(p: any, n: number, total: number, seriesTitle: string, videos: string[] = []): Promise<string[]> {
   const d = p.data;
   const out = [
     `### Статья ${n} из ${total}: ${d.title}`,
@@ -52,15 +53,21 @@ function chapter(p: any, n: number, total: number, seriesTitle: string, videos: 
       edited: 'вычитан при переносе',
       rewritten: 'написан заново о тех же событиях',
     }[d.origin.state as 'original' | 'edited' | 'rewritten'];
-    out.push(`Впервые опубликовано: ${d.origin.date.toISOString().slice(0, 10)} (${state})`);
-    if (d.origin.archive) out.push(`Снимок в веб-архиве: ${d.origin.archive}`);
+    if (d.origin.unpublished) {
+      // Из стола: дата — написания, публикация — здесь.
+      out.push(`Написано: ${d.origin.date.toISOString().slice(0, 10)}, нигде не публиковалось (${state})`);
+      out.push(`Впервые опубликовано: ${d.date.toISOString().slice(0, 10)}, на этом сайте`);
+    } else {
+      out.push(`Впервые опубликовано: ${d.origin.date.toISOString().slice(0, 10)} (${state})`);
+      if (d.origin.archive) out.push(`Снимок в веб-архиве: ${d.origin.archive}`);
+    }
   } else {
     out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
   }
   // Видео к статье — рядом с датами: дата его выкладки тоже свидетельство.
   for (const line of videos) out.push(`Видео к статье: ${line}`);
 
-  out.push('', d.description, '', typography(p.body.trim()), '');
+  out.push('', d.description, '', typography(mdImages(p.body.trim())), '');
   return out;
 }
 
@@ -81,12 +88,12 @@ export const GET: APIRoute = async () => {
       ...(bySeriesOnly.get(s.data.id) ?? []).map((v) => `Видео к журналу: ${videoCorpusLine(v)}`),
       ...(bySeriesOnly.has(s.data.id) ? [''] : []),
     ];
-    episodes.forEach((p, i) =>
+    for (const [i, p] of episodes.entries()) {
       lines.push(
-        ...chapter(p, i + 1, episodes.length, s.data.title,
-          (byPost.get(p.data.slug) ?? []).map((v) => videoCorpusLine(v))),
-      ),
-    );
+        ...(await chapter(p, i + 1, episodes.length, s.data.title,
+          (byPost.get(p.data.slug) ?? []).map((v) => videoCorpusLine(v)))),
+      );
+    }
     parts.push({ id: s.data.id, title: s.data.title, text: lines.join('\n') });
   }
 

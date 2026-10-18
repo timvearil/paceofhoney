@@ -10,6 +10,7 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
 import { typography } from '../plugins/remark-typography.mjs';
+import { mdImages } from '../lib/md-images';
 import { videoCorpusLine, videosForCorpus } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
@@ -36,19 +37,24 @@ export const GET: APIRoute = async ({ props }) => {
     ...(bySeriesOnly.has(s.data.id) ? [''] : []),
   ];
 
-  episodes.forEach((p, i) => {
+  for (const [i, p] of episodes.entries()) {
     const d = p.data;
     out.push(`### Статья ${i + 1} из ${episodes.length}: ${d.title}`, '');
     out.push(`Адрес: ${SITE}/posts/${d.slug}`);
     if (d.origin) {
-      out.push(`Впервые опубликовано: ${d.origin.date.toISOString().slice(0, 10)}`);
-      if (d.origin.archive) out.push(`Снимок в веб-архиве: ${d.origin.archive}`);
+      if (d.origin.unpublished) {
+        out.push(`Написано: ${d.origin.date.toISOString().slice(0, 10)}, нигде не публиковалось`);
+        out.push(`Впервые опубликовано: ${d.date.toISOString().slice(0, 10)}, на этом сайте`);
+      } else {
+        out.push(`Впервые опубликовано: ${d.origin.date.toISOString().slice(0, 10)}`);
+        if (d.origin.archive) out.push(`Снимок в веб-архиве: ${d.origin.archive}`);
+      }
     } else {
       out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
     }
     for (const v of byPost.get(d.slug) ?? []) out.push(`Видео к статье: ${videoCorpusLine(v)}`);
-    out.push('', d.description, '', typography(p.body.trim()), '');
-  });
+    out.push('', d.description, '', typography(mdImages(p.body.trim())), '');
+  }
 
   return new Response(out.join('\n'), {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },

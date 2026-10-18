@@ -8,6 +8,7 @@ import { remarkDialogue } from './src/plugins/remark-dialogue.mjs';
 import { remarkTypography } from './src/plugins/remark-typography.mjs';
 import images from './src/integrations/images.mjs';
 import checkOutput from './src/integrations/check-output.mjs';
+import mdImageLinks from './src/integrations/md-image-links.mjs';
 
 // Канонический домен. Без него неверно соберутся sitemap и абсолютные og:image.
 const SITE = 'https://paceofhoney.me';
@@ -38,6 +39,10 @@ export default defineConfig({
     // Ошибки такого рода сборку не роняют сами по себе, и до 01.10 одна
     // из них жила на сайте незамеченной.
     checkOutput(),
+
+    // Метки кадров в .md и llms-full → адреса файлов, которые уже отдаёт
+    // страница (src/integrations/md-image-links.mjs).
+    mdImageLinks(),
 
     sitemap({
       /*

@@ -567,16 +567,25 @@ export async function getCorpusThread(post: Post): Promise<Thread | null> {
  * букв, этого хватает для русских окончаний и не даёт ложных попаданий
  * на коротких словах, потому что все наши понятия длинные.
  */
-export async function mentionedTerms(post: Post): Promise<string[]> {
+export async function mentionedTerms(post: Post): Promise<{ name: string; anchor: string }[]> {
   const glossary = await getEntry('pages', 'slovar');
   const terms = glossary?.data.terms ?? [];
   if (!terms.length) return [];
 
+  // Якорь каждого термина должен быть в тексте словаря — иначе адрес
+  // из разметки не приведёт к определению.
+  const body = glossary?.body ?? '';
+  for (const t of terms) {
+    if (!body.includes(`id="${t.anchor}"`)) {
+      throw new Error(`Словарь: у термина «${t.name}» якорь «${t.anchor}», но <span id="${t.anchor}"> в тексте нет.`);
+    }
+  }
+
   const text = (post.body ?? '').toLowerCase();
 
   return terms
-    .map((t) => t.name)
-    .filter((name) => {
+    .map((t) => ({ name: t.name, anchor: t.anchor }))
+    .filter(({ name }) => {
       const words = name.toLowerCase().split(/\s+/);
       // Многословные понятия ищем по первому слову плюс последнему:
       // «пометка на полях» встречается и как «пометки на полях».
