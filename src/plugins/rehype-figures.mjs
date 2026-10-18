@@ -56,7 +56,11 @@ export function rehypeFigures() {
       // Ширину колонки браузер знает лучше исходника — см. пункт 3 в шапке.
       img.properties.sizes = SIZES;
 
-      const caption = (img.properties.alt ?? '').trim();
+      // Подпись — из `title`, куда её кладёт remark-obsidian, когда у кадра
+      // есть отдельное описание (`alt`). Нет `title` — подписью служит `alt`,
+      // как до 18.10. Сам `title` убираем: всплывающая подсказка не нужна.
+      const caption = String(img.properties.title ?? img.properties.alt ?? '').trim();
+      delete img.properties.title;
 
       const figure = {
         type: 'element',

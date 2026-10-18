@@ -17,10 +17,18 @@ import imageMap from '../content/_attachments-map.json';
 /** Метка кадра по имени файла в проекте. */
 export const imageMark = (file: string) => `/_img/${file}`;
 
-/** `![[кадр.jpg|подпись]]` → `![подпись](/_img/кадр.jpg)`. */
+/**
+ * `![[кадр.jpg|подпись|описание]]` → `![описание](/_img/кадр.jpg (подпись))`.
+ * Описание — в alt, подпись — в title, как принято в Markdown. Без описания
+ * alt — подпись, как на странице.
+ */
 export function mdImages(body: string): string {
-  return body.replace(/!\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]/g, (_, raw: string, cap?: string) => {
+  return body.replace(/!\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]/g, (_, raw: string, rest?: string) => {
     const name = (imageMap as Record<string, string>)[raw.trim()] ?? raw.trim();
-    return `![${(cap ?? '').trim()}](${imageMark(name)})`;
+    const [caption = '', description = ''] = (rest ?? '').split('|').map((s) => s.trim());
+    // Заголовок — в скобках, а не в кавычках: текст потом идёт через
+    // типографику, и прямые кавычки стали бы ёлочками, а разметка — сломанной.
+    const title = caption ? ` (${caption.replace(/[()]/g, '\\$&')})` : '';
+    return `![${description || caption}](${imageMark(name)}${title})`;
   });
 }

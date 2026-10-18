@@ -6,6 +6,7 @@
  *
  *   ![[фото.jpg]]            →  обычная картинка ./_attachments/фото.jpg
  *   ![[фото.jpg|подпись]]    →  она же, подпись уходит в alt
+ *   ![[фото.jpg|подпись|описание]] → подпись под кадром, описание в alt
  *   [[nektar-3]]             →  ссылка /posts/nektar-3 с заголовком главы
  *   [[nektar-3|смотри тут]]  →  та же ссылка с заданным текстом
  *   [[nektar-3#глава]]       →  ссылка с якорем
@@ -119,11 +120,20 @@ export function remarkObsidian({ root = process.cwd(), attachments = '../_attach
           if (IMAGE_EXT.test(name)) {
             // Имя из текста — исходное, русское. Реальный файл в репозитории
             // назван латиницей: карту готовит scripts/sync-images.mjs.
+            /*
+             * `![[кадр.jpg|подпись|описание]]` (решение 18.10, аудит 17.10):
+             * подпись — литературная, под кадром; описание — что на снимке,
+             * для экранного чтеца и машины. Раньше поле было одно, и чтец
+             * дважды читал подпись, так и не сказав, что снято.
+             * Подпись едет в `title`, оттуда её берёт rehype-figures;
+             * без описания `alt` остаётся подписью, как было.
+             */
+            const [caption = '', description = ''] = (alias ?? '').split('|').map((s) => s.trim());
             out.push({
               type: 'image',
               url: `${attachments}/${images[name] ?? name}`,
-              alt: alias?.trim() ?? '',
-              title: null,
+              alt: description || caption,
+              title: caption || null,
             });
           } else {
             out.push({ type: 'text', value: whole });
