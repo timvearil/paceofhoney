@@ -127,7 +127,7 @@ export async function videosBySeries(): Promise<{ series: Series; groups: { post
  */
 export function videoCorpusLine(v: Video): string {
   const d = v.data;
-  return `${d.title} — снято: ${d.shot}; выложено впервые на ${PLATFORM_NAME[d.first.platform]} ` +
+  return `${d.title} — снято: ${d.shot};${d.credit ? ` автор ролика — ${d.credit};` : ''} выложено впервые на ${PLATFORM_NAME[d.first.platform]} ` +
     `${d.first.date.toISOString().slice(0, 10)}: ${firstUrl(v)}`;
 }
 

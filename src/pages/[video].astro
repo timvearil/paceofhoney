@@ -79,6 +79,7 @@ const graph = sections.flatMap((s) =>
         ...(other.length ? { sameAs: other } : {}),
         isPartOf: { '@id': `${SITE}/series/${s.series.data.id}` },
         ...(g.post ? { about: { '@id': `${SITE}${canonicalHref(g.post)}` } } : {}),
+        ...(d.credit ? { creator: { '@type': 'Person', name: d.credit } } : {}),
         inLanguage: 'ru',
       };
     }),
@@ -124,6 +125,7 @@ const jsonld = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
                 <p class="dates mono">
                   снято {d.shot} · выложено на {PLATFORM_NAME[d.first.platform]} {day(d.first.date)}
                 </p>
+                {d.credit && <p class="dates mono">автор ролика — {d.credit}</p>}
                 <div class="about"><Body /></div>
                 <p class="links mono">
                   {links.map((l) => (
