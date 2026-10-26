@@ -17,3 +17,6 @@
 *.ico  binary
 *.woff binary
 *.woff2 binary
+
+# Ярлык просмотра — для Windows: cmd.exe надёжнее читает свои файлы с CRLF.
+*.cmd text eol=crlf
