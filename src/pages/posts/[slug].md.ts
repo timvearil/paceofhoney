@@ -24,6 +24,7 @@ import { getPublishedSeries, getThread } from '../../lib/content';
 import { typography } from '../../plugins/remark-typography.mjs';
 import { imageMark, mdImages } from '../../lib/md-images';
 import { mdLinks } from '../../lib/md-links';
+import { mdDialogue } from '../../lib/md-dialogue';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -116,8 +117,9 @@ export const GET: APIRoute = async ({ props }) => {
     if (d.lead_caption) lines.push(`Подпись: ${d.lead_caption}`);
     lines.push('');
   }
-  // Кадры и ссылки на свои статьи — обычной разметкой, а не обсидиановским `[[…]]`.
-  lines.push(typography(mdLinks(mdImages(post.body.trim()))), '');
+  // Кадры и ссылки на свои статьи — обычной разметкой, а не обсидиановским `[[…]]`;
+  // реплики — абзацами с тире, как на странице, а не списком из дефисов.
+  lines.push(typography(mdDialogue(mdLinks(mdImages(post.body.trim())))), '');
   lines.push('---', '');
   lines.push(`Источник: ${SITE}/posts/${d.slug}`);
   lines.push('Цитировать можно со ссылкой на источник.');

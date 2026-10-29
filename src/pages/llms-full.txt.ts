@@ -20,6 +20,7 @@ import { getPublishedSeries, getEpisodes } from '../lib/content';
 import { typography } from '../plugins/remark-typography.mjs';
 import { mdImages } from '../lib/md-images';
 import { mdLinks } from '../lib/md-links';
+import { mdDialogue } from '../lib/md-dialogue';
 import { videoCorpusLine, videosForCorpus } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
@@ -68,7 +69,7 @@ async function chapter(p: any, n: number, total: number, seriesTitle: string, vi
   // Видео к статье — рядом с датами: дата его выкладки тоже свидетельство.
   for (const line of videos) out.push(`Видео к статье: ${line}`);
 
-  out.push('', d.description, '', typography(mdLinks(mdImages(p.body.trim()))), '');
+  out.push('', d.description, '', typography(mdDialogue(mdLinks(mdImages(p.body.trim())))), '');
   return out;
 }
 
