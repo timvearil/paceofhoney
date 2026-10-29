@@ -11,6 +11,7 @@ import type { APIRoute, GetStaticPaths } from 'astro';
 import { getPublishedSeries, getEpisodes } from '../lib/content';
 import { typography } from '../plugins/remark-typography.mjs';
 import { mdImages } from '../lib/md-images';
+import { mdLinks } from '../lib/md-links';
 import { videoCorpusLine, videosForCorpus } from '../lib/videos';
 
 const SITE = 'https://paceofhoney.me';
@@ -53,7 +54,7 @@ export const GET: APIRoute = async ({ props }) => {
       out.push(`Опубликовано: ${d.date.toISOString().slice(0, 10)}`);
     }
     for (const v of byPost.get(d.slug) ?? []) out.push(`Видео к статье: ${videoCorpusLine(v)}`);
-    out.push('', d.description, '', typography(mdImages(p.body.trim())), '');
+    out.push('', d.description, '', typography(mdLinks(mdImages(p.body.trim()))), '');
   }
 
   return new Response(out.join('\n'), {

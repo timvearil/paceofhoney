@@ -31,7 +31,7 @@ import path from 'node:path';
 const IMAGE_EXT = /\.(avif|gif|jpe?g|png|svg|webp)$/i;
 
 /** [[ссылка]] и ![[вложение]] с необязательной частью после | и после # */
-const WIKI = /(!?)\[\[([^\]|#]+)(#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
+export const WIKI = /(!?)\[\[([^\]|#]+)(#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
 
 /**
  * Карта «адрес → куда ведёт». Собирается один раз за сборку прямым чтением
@@ -39,7 +39,7 @@ const WIKI = /(!?)\[\[([^\]|#]+)(#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
  */
 let registry = null;
 
-function readRegistry(root) {
+export function readRegistry(root = process.cwd()) {
   if (registry) return registry;
   registry = new Map();
 
@@ -72,6 +72,9 @@ function readRegistry(root) {
   }
   return registry;
 }
+
+/** Якорь `#Глава текста` → `#глава-текста`, как его ставит страница. */
+export const anchorSlug = (anchor) => (anchor ? anchor.toLowerCase().replace(/\s+/g, '-') : '');
 
 /**
  * Карта «исходное имя картинки → файл в репозитории». Её готовит
@@ -151,7 +154,7 @@ export function remarkObsidian({ root = process.cwd(), attachments = '../_attach
 
         out.push({
           type: 'link',
-          url: known.url + (anchor ? anchor.toLowerCase().replace(/\s+/g, '-') : ''),
+          url: known.url + anchorSlug(anchor),
           title: null,
           children: [{ type: 'text', value: alias?.trim() ?? known.title }],
         });
