@@ -222,7 +222,10 @@ export async function assertContentIsSound(): Promise<void> {
   // 1. Адреса не повторяются. Иначе одна страница молча затрёт другую.
   const seen = new Map<string, string>();
   for (const entry of [...posts, ...pages]) {
-    const slug = 'slug' in entry.data ? entry.data.slug : entry.data.permalink;
+    // По коллекции, не по `'slug' in entry.data`: Astro подкладывает в данные
+    // записи ловушку на устаревшее поле `slug`, и после `getEntry` проверка
+    // «есть ли поле» у страницы словаря отвечала «да» и брала пустоту.
+    const slug = entry.collection === 'posts' ? entry.data.slug : entry.data.permalink;
     const previous = seen.get(slug);
     if (previous) problems.push(`Адрес «${slug}» занят дважды: ${previous} и ${entry.id}`);
     seen.set(slug, entry.id);
@@ -364,15 +367,22 @@ export async function assertContentIsSound(): Promise<void> {
    * и переживёт площадку: именно он доказывает, что текст написан до эпохи
    * генеративных моделей. Останавливать сборку из-за этого нельзя — снимка
    * может не существовать, — но промолчать значит дать ему потеряться.
+   *
+   * Неопубликованный текст (`origin.unpublished`) не в счёт: его ссылка ведёт
+   * не на площадку, а на файл с датой версии (`proof`), и веб-архив такой
+   * файл не сохранит — совет был бы невыполним.
    */
-  const noArchive = posts.filter((p) => p.data.origin?.url && !p.data.origin.archive);
+  const noArchive = posts.filter(
+    (p) => p.data.origin?.url && !p.data.origin.archive && !p.data.origin.unpublished,
+  );
   if (noArchive.length && !warnedAboutArchive) {
     // Проверки вызываются из каждого маршрута, а предупреждение нужно одно:
     // иначе при двух десятках архивных статей в консоль уедут три одинаковые
     // простыни, и настоящие сообщения потеряются между ними.
     warnedAboutArchive = true;
     console.warn(
-      '[архив] у этих статей есть ссылка на первую публикацию, но нет снимка ' +
+      '[архив] предупреждение, сборка продолжается. ' +
+        'У этих статей есть ссылка на первую публикацию, но нет снимка ' +
         'в веб-архиве:\n' +
         noArchive.map((p) => `        · ${p.id}`).join('\n') +
         '\n        Площадка может закрыться. Сохраните страницу на web.archive.org ' +
