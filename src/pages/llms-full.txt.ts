@@ -22,13 +22,14 @@ import { mdImages } from '../lib/md-images';
 import { mdLinks } from '../lib/md-links';
 import { mdDialogue } from '../lib/md-dialogue';
 import { videoCorpusLine, videosForCorpus } from '../lib/videos';
+import { getMasterskaya } from '../lib/masterskaya';
 
 const SITE = 'https://paceofhoney.me';
 
 /** Порог, после которого отдаём оглавление вместо корпуса. */
 const LIMIT = 1024 * 1024;
 
-const header = [
+const HEADER = [
   '# Со скоростью мёда — полный текст',
   '',
   'Все статьи сайта paceofhoney.me одним файлом, по журналам и по порядку.',
@@ -76,6 +77,11 @@ async function chapter(p: any, n: number, total: number, seriesTitle: string, vi
 export const GET: APIRoute = async () => {
   const series = await getPublishedSeries();
   const { byPost, bySeriesOnly } = await videosForCorpus();
+  // Мастерская (P16-08): одна строка в шапке, только при включённой связи.
+  const masterskaya = await getMasterskaya();
+  const header = masterskaya
+    ? [...HEADER, `Технические тексты тех же авторов («как сделано») — в Мастерской: ${masterskaya.url}/llms-full.txt`, '']
+    : HEADER;
 
   const parts: { id: string; title: string; text: string }[] = [];
   for (const s of series) {

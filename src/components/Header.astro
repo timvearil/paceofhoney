@@ -12,8 +12,11 @@
  */
 
 import { getEntry } from 'astro:content';
+import { getMasterskaya } from '../lib/masterskaya';
 
 const menu = await getEntry('menu', 'menu');
+// Мастерская — последним пунктом, только когда связь включена (P16-08).
+const masterskaya = await getMasterskaya();
 const items = menu?.data.items ?? [];
 
 const here = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -34,6 +37,9 @@ const isActive = (url: string) => (url === '/' ? here === '/' : here.startsWith(
             </a>
           </li>
         ))}
+        {masterskaya && (
+          <li><a href={masterskaya.url} class="link">{masterskaya.menuTitle} <span aria-hidden="true">↗</span></a></li>
+        )}
       </ul>
 
       <div class="tools">
@@ -67,6 +73,9 @@ const isActive = (url: string) => (url === '/' ? here === '/' : here.startsWith(
         </a>
       </li>
     ))}
+    {masterskaya && (
+      <li><a href={masterskaya.url}>{masterskaya.menuTitle} <span aria-hidden="true">↗</span></a></li>
+    )}
   </ul>
 </aside>
 

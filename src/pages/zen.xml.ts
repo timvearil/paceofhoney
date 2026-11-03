@@ -37,6 +37,7 @@
 import type { APIRoute } from 'astro';
 import type { ImageMetadata } from 'astro';
 import { getPublishedPosts } from '../lib/content';
+import { getMasterskaya, zenItemsMasterskoj } from '../lib/masterskaya';
 
 const SITE = 'https://paceofhoney.me';
 const TITLE = 'Со скоростью мёда';
@@ -137,7 +138,7 @@ export const GET: APIRoute = async ({ url }) => {
   base = import.meta.env.DEV ? url.origin : SITE;
   const posts = (await getPublishedPosts()).filter((p) => p.data.zen);
 
-  const items = await Promise.all(
+  const zhurnal = await Promise.all(
     posts.map(async (p) => {
       const d = p.data;
       const url = `${SITE}/posts/${d.slug}`;
@@ -193,6 +194,22 @@ export const GET: APIRoute = async ({ url }) => {
         .join('\n');
     }),
   );
+
+  /*
+   * Статьи Мастерской (P16-08) — одна лента Дзена на весь проект.
+   * Только при включённой связи (settings/masterskaya.md); их <item> уже
+   * в формате этой ленты. Порядок общий — по дате, от новых к старым,
+   * как у статей Журнала. Мастерская недоступна — лента из статей Журнала.
+   */
+  const m = await getMasterskaya();
+  const items = m
+    ? [
+        ...posts.map((p, i) => ({ date: p.data.date, xml: zhurnal[i] })),
+        ...(await zenItemsMasterskoj(m)),
+      ]
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+        .map((x) => x.xml)
+    : zhurnal;
 
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',

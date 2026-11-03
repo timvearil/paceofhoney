@@ -22,6 +22,7 @@
 import type { Post, Series, Thread } from '../lib/content';
 import { CORPUS_ID, mentionedTerms } from '../lib/content';
 import { getEntry } from 'astro:content';
+import { getMasterskaya } from '../lib/masterskaya';
 
 interface Props {
   /** Страница главы: статья и нить, которой её читают. */
@@ -235,6 +236,23 @@ const graph: Record<string, unknown>[] = [
     author: authors.map((a) => ({ '@id': a['@id'] })),
   },
 ];
+
+/*
+ * Мастерская (P16-08) — сайт того же автора: в графе её `WebSite` с тем же
+ * издателем (`#tim`), как и в графе самой Мастерской. Частью Журнала она
+ * не объявлена: это отдельный сайт проекта. Только при включённой связи.
+ */
+const masterskaya = await getMasterskaya();
+if (masterskaya) {
+  graph.push({
+    '@type': 'WebSite',
+    '@id': `${masterskaya.url}/#website`,
+    url: `${masterskaya.url}/`,
+    name: masterskaya.imya,
+    inLanguage: 'ru-RU',
+    publisher: { '@id': `${SITE}/#tim` },
+  });
+}
 
 /*
  * Серия попадает в граф и со своей страницы, и со страницы главы.

@@ -594,4 +594,20 @@ const videoPage = defineCollection({
   }),
 });
 
-export const collections = { posts, series, pages, menu, footer, passport, videos, videoPage };
+/*
+ * Мастерская — третья витрина проекта (P16-08). Один выключатель `vkl`
+ * на всю связь с ней: меню, llms, разметка, лента Дзена. По умолчанию
+ * выключено: до запуска Мастерской ссылок на неё в Журнале нет.
+ */
+const masterskaya = defineCollection({
+  loader: glob({ base: './src/content/settings', pattern: 'masterskaya.md' }),
+  schema: z.object({
+    vkl: z.boolean().default(false),
+    url: z.string().url(),
+    zen_items: z.string().url(),
+    menu_title: z.string().min(1),
+    imya: z.string().min(1),
+  }),
+});
+
+export const collections = { posts, series, pages, menu, footer, passport, videos, videoPage, masterskaya };

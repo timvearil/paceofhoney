@@ -20,6 +20,7 @@ import type { APIRoute } from 'astro';
 import { getEntry } from 'astro:content';
 import { getPublishedSeries, getEpisodes, getPublishedPosts } from '../lib/content';
 import { PLATFORM_NAME, firstUrl, getVideos } from '../lib/videos';
+import { getMasterskaya } from '../lib/masterskaya';
 
 const SITE = 'https://paceofhoney.me';
 
@@ -27,6 +28,7 @@ export const GET: APIRoute = async () => {
   const series = await getPublishedSeries();
   const posts = await getPublishedPosts();
   const passport = await getEntry('passport', 'passport');
+  const masterskaya = await getMasterskaya();
 
   const out: string[] = [
     '# Со скоростью мёда — paceofhoney.me',
@@ -182,6 +184,13 @@ export const GET: APIRoute = async () => {
     '- MAX: https://max.ru/channel_pace_of_honey',
     '- YouTube: https://www.youtube.com/@pace_of_honey',
     '- VK Видео: https://vkvideo.ru/@pace_of_honey',
+    ...(masterskaya
+      ? [
+          `- Мастерская — третья витрина проекта, «как сделано»: дом, отопление, вода,`,
+          `  электроника, вино, вязание — руки, материалы, цифры, ошибки. Отдельный сайт`,
+          `  тех же авторов: ${masterskaya.url} (карта для агентов — ${masterskaya.url}/llms.txt)`,
+        ]
+      : []),
     '',
     'Видео — отдельная работа тех же авторов, а не пересказ статей.',
     '',
@@ -234,6 +243,7 @@ export const GET: APIRoute = async () => {
     `- [Словарь](${SITE}/slovar)`,
     ...(videos.length ? [`- [Видео к журналам](${SITE}/video)`] : []),
     `- [RSS](${SITE}/rss.xml)`,
+    ...(masterskaya ? [`- [Мастерская — как сделано](${masterskaya.url})`] : []),
     '',
   );
 
