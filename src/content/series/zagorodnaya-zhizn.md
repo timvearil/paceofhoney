@@ -9,6 +9,7 @@ kind: serial
 draft: false
 cover_image: ../_attachments/so-skorostyu-meda.jpg
 cover_alt: Деревянная скамейка в траве на берегу реки, за водой лес и меловые горы в утреннем свете
+cover_position: center 50%
 cover_caption: Устал? Присядь и созерцай
 ---
 
