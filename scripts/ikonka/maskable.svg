@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Иконка «под обрезку» (purpose: maskable) для Android: рисунок тот же,
+       что в icon-192/512.png. Подложка во весь квадрат без скругления —
+       форму вырежет Android; сота уменьшена в 0.8 вокруг центра, чтобы
+       уместиться в гарантированный круг 80 % ширины (вершина с обводкой —
+       11,1 от центра при допустимых 12,8). -->
+  <rect width="32" height="32" fill="#111827" />
+  <g transform="translate(16 16) scale(0.8) translate(-16 -16)">
+    <path d="M16 3.2 26.4 9.1v11.8L16 26.8 5.6 20.9V9.1z" fill="none" stroke="#F9FAFB" stroke-width="2.25" stroke-linejoin="round" />
+    <path d="M16 10.5c2.6 3.1 4 5.2 4 7a4 4 0 0 1-8 0c0-1.8 1.4-3.9 4-7z" fill="#E8A33D" />
+  </g>
+</svg>
