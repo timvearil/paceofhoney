@@ -52,7 +52,7 @@ const DESCRIPTION =
  * собираем их здесь заранее и ищем по имени файла.
  */
 const attachments = import.meta.glob<ImageMetadata>(
-  '/src/content/_attachments/*.{jpg,jpeg,png,JPG,JPEG,PNG}',
+  '/content/_attachments/*.{jpg,jpeg,png,JPG,JPEG,PNG}',
   { eager: true, import: 'default' },
 );
 const byName = new Map(

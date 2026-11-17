@@ -261,7 +261,7 @@ export async function assertContentIsSound(): Promise<void> {
     for (const id of post.data.series) {
       if (!known.has(id)) {
         problems.push(
-          `Статья ${post.id} ссылается на серию «${id}», которой нет в src/content/series/`,
+          `Статья ${post.id} ссылается на серию «${id}», которой нет в content/series/`,
         );
       }
     }
@@ -451,7 +451,7 @@ export async function assertContentIsSound(): Promise<void> {
    ========================================================================= */
 
 const CROPPED = import.meta.glob<{ default: ImageMetadata }>(
-  '../content/_covers/*.{jpg,jpeg,png,webp}',
+  '../../content/_covers/*.{jpg,jpeg,png,webp}',
   { eager: true },
 );
 

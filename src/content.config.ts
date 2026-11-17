@@ -80,7 +80,7 @@ const slugField = z
    ------------------------------------------------------------------------ */
 
 const posts = defineCollection({
-  loader: glob({ base: './src/content/posts', pattern: '**/*.md' }),
+  loader: glob({ base: './content/posts', pattern: '**/*.md' }),
   schema: ({ image }) =>
     z
       .object({
@@ -264,7 +264,7 @@ const posts = defineCollection({
    ------------------------------------------------------------------------ */
 
 const series = defineCollection({
-  loader: glob({ base: './src/content/series', pattern: '**/*.md' }),
+  loader: glob({ base: './content/series', pattern: '**/*.md' }),
   schema: ({ image }) =>
     z.object({
       id: slugField,
@@ -353,7 +353,7 @@ const series = defineCollection({
    ------------------------------------------------------------------------ */
 
 const pages = defineCollection({
-  loader: glob({ base: './src/content/pages', pattern: '**/*.md' }),
+  loader: glob({ base: './content/pages', pattern: '**/*.md' }),
   schema: ({ image }) =>
     z.object({
     title: typographic(1),
@@ -417,7 +417,7 @@ const pages = defineCollection({
    ------------------------------------------------------------------------ */
 
 const menu = defineCollection({
-  loader: glob({ base: './src/content/settings', pattern: 'menu.md' }),
+  loader: glob({ base: './content/settings', pattern: 'menu.md' }),
   schema: z.object({
     items: z
       .array(
@@ -431,7 +431,7 @@ const menu = defineCollection({
 });
 
 const footer = defineCollection({
-  loader: glob({ base: './src/content/settings', pattern: 'footer.md' }),
+  loader: glob({ base: './content/settings', pattern: 'footer.md' }),
   schema: ({ image }) =>
     z.object({
       slogan: typographic(1),
@@ -461,7 +461,7 @@ const footer = defineCollection({
 });
 
 const passport = defineCollection({
-  loader: glob({ base: './src/content/settings', pattern: 'passport.md' }),
+  loader: glob({ base: './content/settings', pattern: 'passport.md' }),
   schema: ({ image }) =>
     z.object({
       title: z.string().default('Когнитивный паспорт'),
@@ -484,7 +484,7 @@ const passport = defineCollection({
    ------------------------------------------------------------------------ */
 
 /*
- * ОДНА ЗАМЕТКА — ОДИН РОЛИК. Лежат в `src/content/videos/`, правятся
+ * ОДНА ЗАМЕТКА — ОДИН РОЛИК. Лежат в `content/videos/`, правятся
  * в Obsidian так же, как статьи. Из них собирается страница `/video`
  * и строка «к этой статье есть видео» в конце статьи.
  *
@@ -502,7 +502,7 @@ const passport = defineCollection({
 const PLATFORM = z.enum(['youtube', 'vk']);
 
 const videos = defineCollection({
-  loader: glob({ base: './src/content/videos', pattern: '**/*.md' }),
+  loader: glob({ base: './content/videos', pattern: '**/*.md' }),
   schema: ({ image }) =>
     z
       .object({
@@ -583,7 +583,7 @@ const videos = defineCollection({
  * а не в коде страницы.
  */
 const videoPage = defineCollection({
-  loader: glob({ base: './src/content/settings', pattern: 'video.md' }),
+  loader: glob({ base: './content/settings', pattern: 'video.md' }),
   schema: z.object({
     title: typographic(1),
     description: typographic(1),
@@ -600,7 +600,7 @@ const videoPage = defineCollection({
  * выключено: до запуска Мастерской ссылок на неё в Журнале нет.
  */
 const masterskaya = defineCollection({
-  loader: glob({ base: './src/content/settings', pattern: 'masterskaya.md' }),
+  loader: glob({ base: './content/settings', pattern: 'masterskaya.md' }),
   schema: z.object({
     vkl: z.boolean().default(false),
     url: z.string().url(),
