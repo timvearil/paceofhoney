@@ -56,6 +56,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * в истории Git навсегда, даже если потом удалить.
  *
  * Путь можно перебить переменной окружения HONEY_ATTACHMENTS.
+ *
+ * ОТСЧЁТ — ОТ ПАПКИ КОДА. ROOT здесь — `.sayt`, поэтому до корня vault три
+ * шага вверх: `.sayt` → `paceofhoney` → `20_Projects`. С 17.11 (P16-13) код
+ * лежит на уровень глубже, чем раньше. Если папку кода снова передвинут,
+ * а путь не поправят, скрипт не упадёт: напишет «папки с кадрами нет»
+ * и соберёт сайт со старыми кадрами. Проверка — строка «паспорт кадров»
+ * в выводе сборки.
  */
 const ARCHIVE =
   process.env.HONEY_ATTACHMENTS ?? path.resolve(ROOT, '../../../99_Attachments/paceofhoney');
