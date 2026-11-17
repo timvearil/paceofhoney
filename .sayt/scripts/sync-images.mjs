@@ -58,13 +58,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * Путь можно перебить переменной окружения HONEY_ATTACHMENTS.
  */
 const ARCHIVE =
-  process.env.HONEY_ATTACHMENTS ?? path.resolve(ROOT, '../../99_Attachments/paceofhoney');
+  process.env.HONEY_ATTACHMENTS ?? path.resolve(ROOT, '../../../99_Attachments/paceofhoney');
 
 /** Куда кладём подготовленные копии. Общая папка для статей, серий и настроек. */
-const TARGET = path.join(ROOT, 'content/_attachments');
+const TARGET = path.join(ROOT, '../content/_attachments');
 
 /** Карта «исходное имя → файл в репозитории». Её читает сборка. */
-const MAP_FILE = path.join(ROOT, 'content/_attachments-map.json');
+const MAP_FILE = path.join(ROOT, '../content/_attachments-map.json');
 
 const MAX_SIDE = 2560;
 const QUALITY = 82;
@@ -109,7 +109,7 @@ const TIDY_FILE = path.join(TARGET, '.tidy.json');
  */
 const PHOTOS_FILE =
   process.env.HONEY_PHOTOS ??
-  path.resolve(ROOT, '../paceofhoney-docs/00_Reference/pasport-kadrov.md');
+  path.resolve(ROOT, '../../paceofhoney-docs/00_Reference/pasport-kadrov.md');
 
 /* ------------------------------------------------------------------------ */
 
@@ -403,7 +403,7 @@ async function squeeze(from, to) {
    ========================================================================= */
 
 /** Куда складываем нарезанное. Рядом с кадрами, но отдельной папкой. */
-const COVERS = path.join(ROOT, 'content/_covers');
+const COVERS = path.join(ROOT, '../content/_covers');
 
 /** Что уже нарезано и из чего — чтобы не пережимать на каждом запуске. */
 const COVERS_FILE = path.join(COVERS, '.covers.json');
@@ -734,7 +734,7 @@ async function checkNumbering(files) {
 /** Все файлы контента, где могут встретиться ссылки на картинки. */
 async function contentFiles() {
   const dirs = ['posts', 'pages', 'series', 'settings', 'videos'].map((d) =>
-    path.join(ROOT, 'content', d),
+    path.join(ROOT, '../content', d),
   );
   const out = [];
   for (const dir of dirs) {

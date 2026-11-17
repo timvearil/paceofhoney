@@ -9,7 +9,7 @@ rem Okno ne zakryvat, poka smotrite sajt. Zakryli okno - stend ostanovlen.
 rem Esli stend uzhe zapushhen, vtoroj ne podnimaetsya - prosto otkryvaetsya brauzer:
 rem inache Astro zanyal by sosednij port, i bylo by dva raznyh stenda.
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0.sayt"
 
 netstat -ano | findstr /r /c:"127\.0\.0\.1:4321 .*LISTENING" >nul
 if not errorlevel 1 (

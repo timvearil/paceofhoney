@@ -451,7 +451,7 @@ export async function assertContentIsSound(): Promise<void> {
    ========================================================================= */
 
 const CROPPED = import.meta.glob<{ default: ImageMetadata }>(
-  '../../content/_covers/*.{jpg,jpeg,png,webp}',
+  '../../../content/_covers/*.{jpg,jpeg,png,webp}',
   { eager: true },
 );
 

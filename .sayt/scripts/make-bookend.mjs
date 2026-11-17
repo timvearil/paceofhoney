@@ -22,8 +22,8 @@ import sharp from 'sharp';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Та же папка, что у переноса кадров: `99_Attachments/paceofhoney`.
 const ARCHIVE =
-  process.env.HONEY_ATTACHMENTS ?? path.resolve(ROOT, '../../99_Attachments/paceofhoney');
-const TARGET = path.join(ROOT, 'content/_attachments');
+  process.env.HONEY_ATTACHMENTS ?? path.resolve(ROOT, '../../../99_Attachments/paceofhoney');
+const TARGET = path.join(ROOT, '../content/_attachments');
 
 const SOURCE = process.env.HONEY_BENCH ?? 'Со скоростью мёда.jpg';
 

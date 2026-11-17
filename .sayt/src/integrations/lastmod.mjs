@@ -38,7 +38,7 @@ function list(fm, name) {
 
 /** Карта «путь страницы → дата YYYY-MM-DD». */
 export function lastmodMap(root) {
-  const dir = path.join(root, 'content/posts');
+  const dir = path.join(root, '../content/posts');
   const posts = [];
   for (const name of fs.readdirSync(dir)) {
     if (!name.endsWith('.md')) continue;

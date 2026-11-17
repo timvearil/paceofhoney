@@ -44,8 +44,8 @@ export function readRegistry(root = process.cwd()) {
   registry = new Map();
 
   const sources = [
-    { dir: path.join(root, 'content/posts'), prefix: '/posts/', key: 'slug' },
-    { dir: path.join(root, 'content/pages'), prefix: '', key: 'permalink' },
+    { dir: path.join(root, '../content/posts'), prefix: '/posts/', key: 'slug' },
+    { dir: path.join(root, '../content/pages'), prefix: '', key: 'permalink' },
   ];
 
   for (const { dir, prefix, key } of sources) {
@@ -86,7 +86,7 @@ let imageMap = null;
 function readImageMap(root) {
   if (imageMap) return imageMap;
   try {
-    imageMap = JSON.parse(fs.readFileSync(path.join(root, 'content/_attachments-map.json'), 'utf8'));
+    imageMap = JSON.parse(fs.readFileSync(path.join(root, '../content/_attachments-map.json'), 'utf8'));
   } catch {
     imageMap = {};
   }

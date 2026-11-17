@@ -12,7 +12,7 @@
  * файла и 45 МБ, на которые никто не ссылался.
  */
 
-import imageMap from '../../content/_attachments-map.json';
+import imageMap from '../../../content/_attachments-map.json';
 
 /** Метка кадра по имени файла в проекте. */
 export const imageMark = (file: string) => `/_img/${file}`;
